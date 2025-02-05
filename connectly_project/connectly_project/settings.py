@@ -42,7 +42,15 @@ ALLOWED_HOSTS = []
 AUTH_USER_MODEL = 'posts.User'
 
 
-
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+}
 
 
 AUTHENTICATION_BACKENDS = [
@@ -66,6 +74,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'posts',
     'django_extensions',
+    'rest_framework.authtoken',
 ]
 
 MIDDLEWARE = [

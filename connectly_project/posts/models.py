@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, Group, PermissionsMixin
 
 class UserManager(BaseUserManager):
     def create_user(self, username, email, password=None):
@@ -25,9 +25,13 @@ class UserManager(BaseUserManager):
         )
         user.is_admin = True
         user.save(using=self._db)
+
+        admin_group, created = Group.objects.get_or_create(name="Admin")
+        user.groups.add(admin_group)
+
         return user
 
-class User(AbstractBaseUser):
+class User(AbstractBaseUser, PermissionsMixin):
     username = models.CharField(max_length=100, unique=True)
     email = models.EmailField(unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -43,13 +47,9 @@ class User(AbstractBaseUser):
         return self.username
 
     def has_perm(self, perm, obj=None):
-        return True
+        return self.is_admin
 
     def has_module_perms(self, app_label):
-        return True
-
-    @property
-    def is_staff(self):
         return self.is_admin
 
 class Post(models.Model):
