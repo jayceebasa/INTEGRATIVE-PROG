@@ -1,20 +1,47 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.authtoken.models import Token
+from django.contrib.auth import authenticate, get_user_model
+from django.views.decorators.csrf import csrf_exempt
 from .permissions import IsPostAuthor
 from .models import User, Post, Comment
 from .serializers import UserSerializer, PostSerializer, CommentSerializer
-from rest_framework.decorators import api_view, authentication_classes, permission_classes
-from rest_framework import serializers
-from django.contrib.auth import authenticate, get_user_model
-from rest_framework.permissions import IsAuthenticated
-from django.views.decorators.csrf import csrf_exempt
-from rest_framework.authtoken.models import Token
-from rest_framework.authentication import TokenAuthentication
+from .singletons.config_manager import ConfigManager
+from .singletons.logger_singleton import LoggerSingleton
+from .factories.post_factory import PostFactory
+
+config1 = ConfigManager()
+config2 = ConfigManager()
+
+assert config1 is config2  # Both instances should be the same
+config1.set_setting("DEFAULT_PAGE_SIZE", 50)
+assert config2.get_setting("DEFAULT_PAGE_SIZE") == 50
+
+logger = LoggerSingleton().get_logger()
+logger.info("API initialized successfully.")
+
+
+class CreatePostView(APIView):
+    def post(self, request):
+        data = request.data
+        try:
+            post = PostFactory.create_post(
+                post_type=data['post_type'],
+                title=data['title'],
+                content=data.get('content', ''),
+                metadata=data.get('metadata', {}),
+                author=request.user  # Set the author to the current authenticated user
+            )
+            return Response({'message': 'Post created successfully!', 'post_id': post.id}, status=status.HTTP_201_CREATED)
+        except ValueError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
 
 #create ng superuser
-
 @csrf_exempt
 @api_view(['POST'])
 @authentication_classes([])

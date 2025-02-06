@@ -1,6 +1,6 @@
 from django.urls import path
 from . import views
-from .views import UserListCreate, PostListCreate, CommentListCreate, login, create_superuser, logout
+from .views import UserListCreate, PostListCreate, CommentListCreate, login, create_superuser, logout, CreatePostView
 
 
 urlpatterns = [
@@ -10,4 +10,5 @@ urlpatterns = [
     path('login/', login, name='login'),
     path('create_admin/', create_superuser, name='create_superuser'),
     path('logout/', logout, name='logout'),
+    path('create_post/', CreatePostView.as_view(), name='create_post'),
 ]

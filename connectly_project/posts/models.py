@@ -53,7 +53,16 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.is_admin
 
 class Post(models.Model):
-    content = models.TextField()
+    POST_TYPES = [
+        ('text', 'Text'),
+        ('image', 'Image'),
+        ('video', 'Video'),
+    ]
+
+    title = models.CharField(max_length=255, default='FALSE')
+    content = models.TextField(blank=True, default='FALSE')
+    post_type = models.CharField(max_length=10, choices=POST_TYPES, default='FALSE')
+    metadata = models.JSONField(default=dict)
     author = models.ForeignKey(User, related_name='posts', on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
