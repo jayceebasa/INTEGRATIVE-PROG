@@ -1,3 +1,5 @@
+#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA#
+from django.forms import ValidationError
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -7,6 +9,7 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate, get_user_model
 from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.password_validation import validate_password
 from .permissions import IsPostAuthor
 from .models import User, Post, Comment
 from .serializers import UserSerializer, PostSerializer, CommentSerializer
@@ -34,7 +37,7 @@ class CreatePostView(APIView):
                 title=data['title'],
                 content=data.get('content', ''),
                 metadata=data.get('metadata', {}),
-                author=request.user  # Set the author to the current authenticated user
+                author=request.user
             )
             return Response({'message': 'Post created successfully!', 'post_id': post.id}, status=status.HTTP_201_CREATED)
         except ValueError as e:
@@ -62,6 +65,25 @@ def create_superuser(request):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+@csrf_exempt
+@api_view(['POST'])
+@authentication_classes([])
+@permission_classes([])
+def create_user(request):
+    data = request.data
+    serializer = UserSerializer(data=data)
+    if serializer.is_valid():
+        password = data.get('password')
+        try:
+            validate_password(password)  # Validate the password
+            user = serializer.save()
+            user.set_password(password)  # Set the hashed password
+            user.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except ValidationError as e:
+            return Response({'password': e.messages}, status=status.HTTP_400_BAD_REQUEST)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @csrf_exempt
 @api_view(['POST'])
@@ -98,13 +120,13 @@ class UserListCreate(APIView):
         users = User.objects.all()
         serializer = UserSerializer(users, many=True)
         return Response(serializer.data)
-
+      
     def post(self, request):
-        serializer = UserSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+      serializer = UserSerializer(data=request.data)
+      if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+      return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def put(self, request):
         try:
@@ -192,7 +214,6 @@ class CommentListCreate(APIView):
         except Comment.DoesNotExist:
             return Response({"error": "Comment not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        # Check if the user is the author or an admin
         if request.user != comment.author and not request.user.is_admin:
             return Response({"error": "You do not have permission to edit this comment."}, status=status.HTTP_403_FORBIDDEN)
 
@@ -208,17 +229,15 @@ class CommentListCreate(APIView):
         except Comment.DoesNotExist:
             return Response({"error": "Comment not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        # Check if the user is the author or an admin
         if request.user != comment.author and not request.user.is_admin:
             return Response({"error": "You do not have permission to delete this comment."}, status=status.HTTP_403_FORBIDDEN)
-
+    
         comment.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
       
       
 class PostDetailView(APIView):
     permission_classes = [IsAuthenticated, IsPostAuthor]
-
 
     def get(self, request, pk):
         post = Post.objects.get(pk=pk)
