@@ -150,17 +150,29 @@ class UserListCreate(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 class PostListCreate(APIView):
+    authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated, IsPostAuthor]
 
     def get(self, request):
-        posts = Post.objects.all()
+        print("GET request received")
+        print(f"Authenticated user: {request.user}")
+        if request.user.is_authenticated:
+            print("User is authenticated")
+        else:
+            print("User is not authenticated")
+        
+        posts = Post.objects.filter(author=request.user)
+        print(f"Posts found: {posts.count()}")
+        for post in posts:
+            print(f"Post: {post.title} by {post.author.username}")
+        
         serializer = PostSerializer(posts, many=True)
         return Response(serializer.data)
 
     def post(self, request):
         serializer = PostSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(author=request.user)  # Set the author to the authenticated user
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
