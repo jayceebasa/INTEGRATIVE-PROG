@@ -166,24 +166,31 @@ class CreatePostView(APIView):
             return Response(post_data)
       
     def put(self, request):
-        try:
-            post = Post.objects.get(id=request.data['id'])
-        except Post.DoesNotExist:
-            return Response({"error": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
-        
-        serializer = PostSerializer(post, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+      try:
+        post = Post.objects.get(id=request.data['id'])
+      except Post.DoesNotExist:
+        return Response({"error": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
+      
+      if request.user != post.author and not request.user.is_admin:
+        return Response({"error": "You do not have permission to edit this post."}, status=status.HTTP_403_FORBIDDEN)
+      
+      serializer = PostSerializer(post, data=request.data, partial=True)
+      if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data)
+      return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+      
     def delete(self, request):
-        try:
-            post = Post.objects.get(id=request.data['id'])
-        except Post.DoesNotExist:
-            return Response({"error": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
-        
-        post.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+      try:
+        post = Post.objects.get(id=request.data['id'])
+      except Post.DoesNotExist:
+        return Response({"error": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
+      
+      if request.user != post.author and not request.user.is_admin:
+        return Response({"error": "You do not have permission to delete this post."}, status=status.HTTP_403_FORBIDDEN)
+      
+      post.delete()
+      return Response(status=status.HTTP_204_NO_CONTENT)
 
 class CreateCommentView(APIView):
     authentication_classes = [TokenAuthentication]
