@@ -8,27 +8,19 @@ class UserManager(BaseUserManager):
         if not email:
             raise ValueError('Users must have an email address')
 
-        user = self.model(
-            username=username,
-            email=self.normalize_email(email),
-        )
-
+        email = self.normalize_email(email)
+        user = self.model(username=username, email=email)
         user.set_password(password)
         user.save(using=self._db)
         return user
 
     def create_superuser(self, username, email, password=None):
-        user = self.create_user(
-            username,
-            email,
-            password=password,
-        )
+        user = self.create_user(username, email, password)
         user.is_admin = True
         user.save(using=self._db)
 
         admin_group, created = Group.objects.get_or_create(name="Admin")
         user.groups.add(admin_group)
-
         return user
 
 class User(AbstractBaseUser, PermissionsMixin):
@@ -59,9 +51,9 @@ class Post(models.Model):
         ('video', 'Video'),
     ]
 
-    title = models.CharField(max_length=255, default='FALSE')
+    title = models.CharField(max_length=255)
     content = models.TextField(blank=True)
-    post_type = models.CharField(max_length=10, choices=POST_TYPES, default='FALSE')
+    post_type = models.CharField(max_length=10, choices=POST_TYPES)
     metadata = models.JSONField(default=dict)
     author = models.ForeignKey(User, related_name='posts', on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)

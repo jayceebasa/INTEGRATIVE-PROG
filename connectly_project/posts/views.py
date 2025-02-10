@@ -1,4 +1,3 @@
-#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA#
 from django.forms import ValidationError
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -18,34 +17,12 @@ from .singletons.config_manager import ConfigManager
 from .singletons.logger_singleton import LoggerSingleton
 from .factories.post_factory import PostFactory
 
-config1 = ConfigManager()
-config2 = ConfigManager()
-
-assert config1 is config2  # Both instances should be the same
-config1.set_setting("DEFAULT_PAGE_SIZE", 50)
-assert config2.get_setting("DEFAULT_PAGE_SIZE") == 50
+config = ConfigManager()
+config.set_setting("DEFAULT_PAGE_SIZE", 50)
 
 logger = LoggerSingleton().get_logger()
 logger.info("API initialized successfully.")
 
-
-class CreatePostView(APIView):
-    def post(self, request):
-        data = request.data
-        try:
-            post = PostFactory.create_post(
-                post_type=data['post_type'],
-                title=data['title'],
-                content=data.get('content', ''),
-                metadata=data.get('metadata', {}),
-                author=request.user
-            )
-            return Response({'message': 'Post created successfully!', 'post_id': post.id}, status=status.HTTP_201_CREATED)
-        except ValueError as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-
-#create ng superuser
 @csrf_exempt
 @api_view(['POST'])
 @authentication_classes([])
@@ -65,6 +42,7 @@ def create_superuser(request):
         serializer = UserSerializer(user)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     except Exception as e:
+        logger.error(f"Error creating superuser: {e}")
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 @csrf_exempt
@@ -77,9 +55,9 @@ def create_user(request):
     if serializer.is_valid():
         password = data.get('password')
         try:
-            validate_password(password)  # Validate the password
+            validate_password(password)
             user = serializer.save()
-            user.set_password(password)  # Set the hashed password
+            user.set_password(password)
             user.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         except ValidationError as e:
@@ -100,24 +78,36 @@ def login(request):
         return Response({'token': token.key}, status=status.HTTP_200_OK)
     else:
         return Response({'detail': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
-      
+
 @csrf_exempt
 @api_view(['POST'])
 def logout(request):
     request.user.auth_token.delete()
     return Response(status=status.HTTP_200_OK)
 
+
+class CreatePostView(APIView):
+    def post(self, request):
+        data = request.data
+        try:
+            post = PostFactory.create_post(
+                post_type=data['post_type'],
+                title=data['title'],
+                content=data.get('content', ''),
+                metadata=data.get('metadata', {}),
+                author=request.user
+            )
+            return Response({'message': 'Post created successfully!', 'post_id': post.id}, status=status.HTTP_201_CREATED)
+        except ValueError as e:
+            logger.error(f"Error creating post: {e}")
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 class ProtectedView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
-
     def get(self, request):
         return Response({"message": "Authenticated!"})
 
-@method_decorator(csrf_exempt, name='dispatch')
-@method_decorator(authentication_classes([]), name='dispatch')
-@method_decorator(permission_classes([AllowAny]), name='dispatch')
 class UserListCreate(APIView):
     def get(self, request):
         users = User.objects.all()
@@ -125,11 +115,11 @@ class UserListCreate(APIView):
         return Response(serializer.data)
       
     def post(self, request):
-      serializer = UserSerializer(data=request.data)
-      if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-      return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer = UserSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def put(self, request):
         try:
@@ -157,22 +147,7 @@ class PostListCreate(APIView):
     permission_classes = [IsAuthenticated, IsPostAuthor]
 
     def get(self, request):
-        print("GET request received")
-        print(f"Authenticated user: {request.user}")
-        if request.user.is_authenticated:
-            print("User is authenticated")
-        else:
-            print("User is not authenticated")
-        
-        if request.user.is_admin:
-          posts = Post.objects.all()
-        else:
-          posts = Post.objects.filter(author=request.user)
-          
-        print(f"Posts found: {posts.count()}")
-        for post in posts:
-            print(f"Post: {post.title} by {post.author.username}")
-        
+        posts = Post.objects.all() if request.user.is_admin else Post.objects.filter(author=request.user)
         serializer = PostSerializer(posts, many=True)
         return Response(serializer.data)
 
@@ -215,18 +190,7 @@ class CommentListCreate(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        print("GET request received for comments")
-        print(f"Authenticated user: {request.user}")
-        if request.user.is_authenticated:
-            print("User is authenticated")
-        else:
-            print("User is not authenticated")
-        
         comments = Comment.objects.filter(author=request.user)
-        print(f"Comments found: {comments.count()}")
-        for comment in comments:
-            print(f"Comment: {comment.text} by {comment.author.username}")
-        
         serializer = CommentSerializer(comments, many=True)
         return Response(serializer.data)
 
@@ -263,12 +227,15 @@ class CommentListCreate(APIView):
     
         comment.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-      
-      
+
 class PostDetailView(APIView):
     permission_classes = [IsAuthenticated, IsPostAuthor]
 
     def get(self, request, pk):
-        post = Post.objects.get(pk=pk)
+        try:
+            post = Post.objects.get(pk=pk)
+        except Post.DoesNotExist:
+            return Response({"error": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
+        
         self.check_object_permissions(request, post)
         return Response({"content": post.content})
