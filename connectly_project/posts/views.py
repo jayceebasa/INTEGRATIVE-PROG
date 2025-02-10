@@ -1,3 +1,4 @@
+from django.db import IntegrityError
 from django.forms import ValidationError
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -11,8 +12,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.contrib.auth.password_validation import validate_password
 from .permissions import IsPostAuthor
-from .models import User, Post, Comment
-from .serializers import UserSerializer, PostSerializer, CommentSerializer
+from .models import User, Post, Comment, Likes
+from .serializers import UserSerializer, PostSerializer, CommentSerializer, LikesSerializer
 from .singletons.config_manager import ConfigManager
 from .singletons.logger_singleton import LoggerSingleton
 from .factories.post_factory import PostFactory
@@ -86,21 +87,6 @@ def logout(request):
     return Response(status=status.HTTP_200_OK)
 
 
-class CreatePostView(APIView):
-    def post(self, request):
-        data = request.data
-        try:
-            post = PostFactory.create_post(
-                post_type=data['post_type'],
-                title=data['title'],
-                content=data.get('content', ''),
-                metadata=data.get('metadata', {}),
-                author=request.user
-            )
-            return Response({'message': 'Post created successfully!', 'post_id': post.id}, status=status.HTTP_201_CREATED)
-        except ValueError as e:
-            logger.error(f"Error creating post: {e}")
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 class ProtectedView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
@@ -142,83 +128,99 @@ class UserListCreate(APIView):
         user.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-class PostListCreate(APIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated, IsPostAuthor]
 
-    def get(self, request):
-        posts = Post.objects.all() if request.user.is_admin else Post.objects.filter(author=request.user)
-        serializer = PostSerializer(posts, many=True)
-        return Response(serializer.data)
-
+class CreatePostView(APIView):
     def post(self, request):
-        serializer = PostSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save(author=request.user)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+        data = request.data
+        if not data.get('content') or not data.get('title'):
+            return Response({'error': 'Title and content are required fields.'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            post = PostFactory.create_post(
+                post_type=data['post_type'],
+                title=data['title'],
+                content=data.get('content', ''),
+                metadata=data.get('metadata', {}),
+                author=request.user
+            )
+            return Response({'message': 'Post created successfully!', 'post_id': post.id}, status=status.HTTP_201_CREATED)
+        except ValueError as e:
+            logger.error(f"Error creating post: {e}")
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+          
+    def get(self, request):
+            if request.user.is_admin:
+                posts = Post.objects.all()
+            else:
+                posts = Post.objects.filter(author=request.user)
+            
+            post_data = []
+            for post in posts:
+                serializer = PostSerializer(post)
+                comments_count = Comment.objects.filter(post=post).count()
+                likes_count = Likes.objects.filter(post=post).count()
+                post_info = serializer.data
+                post_info['comments_count'] = comments_count
+                post_info['likes_count'] = likes_count
+                post_data.append(post_info)
+            
+            return Response(post_data)
+      
     def put(self, request):
         try:
             post = Post.objects.get(id=request.data['id'])
         except Post.DoesNotExist:
             return Response({"error": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
-
-        if request.user != post.author and not request.user.is_admin:
-            return Response({"error": "You do not have permission to edit this post."}, status=status.HTTP_403_FORBIDDEN)
-
-        serializer = PostSerializer(post, data=request.data)
+        
+        serializer = PostSerializer(post, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
     def delete(self, request):
         try:
             post = Post.objects.get(id=request.data['id'])
         except Post.DoesNotExist:
             return Response({"error": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
-
-        if request.user != post.author and not request.user.is_admin:
-            return Response({"error": "You do not have permission to delete this post."}, status=status.HTTP_403_FORBIDDEN)
-
+        
         post.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-class CommentListCreate(APIView):
+class CreateCommentView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
-    def get(self, request):
-        comments = Comment.objects.filter(author=request.user)
+    def get(self, request, id):
+        comments = Comment.objects.filter(post_id=id) if not request.user.is_admin else Comment.objects.all()
         serializer = CommentSerializer(comments, many=True)
         return Response(serializer.data)
 
-    def post(self, request):
-        serializer = CommentSerializer(data=request.data)
+    def post(self, request, id):
+        data = request.data.copy()
+        data['post'] = id
+        serializer = CommentSerializer(data=data, context={'request': request})
         if serializer.is_valid():
-            serializer.save(author=request.user)
+            serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def put(self, request):
+    def put(self, request, id):
         try:
-            comment = Comment.objects.get(id=request.data['id'])
+            comment = Comment.objects.get(id=request.data['id'], post_id=id)
         except Comment.DoesNotExist:
             return Response({"error": "Comment not found."}, status=status.HTTP_404_NOT_FOUND)
 
         if request.user != comment.author and not request.user.is_admin:
             return Response({"error": "You do not have permission to edit this comment."}, status=status.HTTP_403_FORBIDDEN)
 
-        serializer = CommentSerializer(comment, data=request.data)
+        serializer = CommentSerializer(comment, data=request.data, context={'request': request})
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def delete(self, request):
+    def delete(self, request, id):
         try:
-            comment = Comment.objects.get(id=request.data['id'])
+            comment = Comment.objects.get(id=request.data['id'], post_id=id)
         except Comment.DoesNotExist:
             return Response({"error": "Comment not found."}, status=status.HTTP_404_NOT_FOUND)
 
@@ -228,6 +230,40 @@ class CommentListCreate(APIView):
         comment.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+
+import logging
+
+logger = logging.getLogger(__name__)
+
+class LikesView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, id):
+        logger.debug(f"Request data: {request.data}")
+        if not request.data:
+            return Response({"error": "Request data is missing or not properly formatted."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        data = request.data.copy()
+        data['post'] = id
+        serializer = LikesSerializer(data=data, context={'request': request})
+        if serializer.is_valid():
+            try:
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            except IntegrityError:
+                return Response({"error": "You have already liked this post."}, status=status.HTTP_400_BAD_REQUEST)
+        logger.debug(f"Serializer errors: {serializer.errors}")
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+      
+    def delete(self, request, id):
+        try:
+            like = Likes.objects.get(post_id=id, user=request.user)
+        except Likes.DoesNotExist:
+            return Response({"error": "Like not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        like.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 class PostDetailView(APIView):
     permission_classes = [IsAuthenticated, IsPostAuthor]
 

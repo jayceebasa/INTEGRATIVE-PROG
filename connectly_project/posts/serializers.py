@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, Post, Comment
+from .models import User, Post, Comment, Likes
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -31,13 +31,26 @@ class UserSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(errors)
 
         return super().run_validation(data)
-    
 
+class CommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Comment
+        fields = ['text', 'post', 'created_at']
+        extra_kwargs = {'author': {'required': False}}
 
-        
+    def create(self, validated_data):
+        request = self.context.get('request')
+        validated_data['author'] = request.user
+        return super().create(validated_data)
+
+    def run_validation(self, data):
+        post_id = data.get('post')
+        if not Post.objects.filter(id=post_id).exists():
+            raise serializers.ValidationError({"post": "Post not found."})
+        return super().run_validation(data)
+
 class PostSerializer(serializers.ModelSerializer):
-    comments = serializers.StringRelatedField(many=True, read_only=True)
-
+    comments = CommentSerializer(many=True, read_only=True)
     class Meta:
         model = Post
         fields = ['id', 'content', 'author', 'created_at', 'comments']
@@ -50,16 +63,33 @@ class PostSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"content": "Post content cannot be empty."})
         return super().run_validation(data)
 
-class CommentSerializer(serializers.ModelSerializer):
+class LikesSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Comment
-        fields = ['id', 'text', 'author', 'post', 'created_at']
+        model = Likes
+        fields = ['post']
+        extra_kwargs = {'user': {'required': False}}
+
+    def create(self, validated_data):
+        request = self.context.get('request')
+        validated_data['user'] = request.user
+        post_id = validated_data.get('post')
+        validated_data['post'] = Post.objects.get(id=post_id)
+        return super().create(validated_data)
+
+    def validate_post(self, value):
+        if isinstance(value, Post):
+            return value.id
+        return value
+
+    def validate(self, data):
+        request = self.context.get('request')
+        if 'user' not in data:
+            data['user'] = request.user
+        return data
 
     def run_validation(self, data):
-        author_id = data.get('author')
+        data = super().run_validation(data)
         post_id = data.get('post')
-        if not User.objects.filter(id=author_id).exists():
-            raise serializers.ValidationError({"author": "Author not found."})
         if not Post.objects.filter(id=post_id).exists():
             raise serializers.ValidationError({"post": "Post not found."})
-        return super().run_validation(data)
+        return data
