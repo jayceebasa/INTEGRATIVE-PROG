@@ -46,6 +46,8 @@ class PostSerializer(serializers.ModelSerializer):
         author_id = data.get('author')
         if not User.objects.filter(id=author_id).exists():
             raise serializers.ValidationError({"author": "Author not found."})
+        if not data.get('content'):
+            raise serializers.ValidationError({"content": "Post content cannot be empty."})
         return super().run_validation(data)
 
 class CommentSerializer(serializers.ModelSerializer):

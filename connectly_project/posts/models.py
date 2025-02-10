@@ -60,7 +60,7 @@ class Post(models.Model):
     ]
 
     title = models.CharField(max_length=255, default='FALSE')
-    content = models.TextField(blank=True, default='FALSE')
+    content = models.TextField(blank=True)
     post_type = models.CharField(max_length=10, choices=POST_TYPES, default='FALSE')
     metadata = models.JSONField(default=dict)
     author = models.ForeignKey(User, related_name='posts', on_delete=models.CASCADE)

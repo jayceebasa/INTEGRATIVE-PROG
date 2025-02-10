@@ -4,11 +4,12 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate, get_user_model
 from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 from django.contrib.auth.password_validation import validate_password
 from .permissions import IsPostAuthor
 from .models import User, Post, Comment
@@ -114,7 +115,9 @@ class ProtectedView(APIView):
     def get(self, request):
         return Response({"message": "Authenticated!"})
 
-
+@method_decorator(csrf_exempt, name='dispatch')
+@method_decorator(authentication_classes([]), name='dispatch')
+@method_decorator(permission_classes([AllowAny]), name='dispatch')
 class UserListCreate(APIView):
     def get(self, request):
         users = User.objects.all()
@@ -161,7 +164,11 @@ class PostListCreate(APIView):
         else:
             print("User is not authenticated")
         
-        posts = Post.objects.filter(author=request.user)
+        if request.user.is_admin:
+          posts = Post.objects.all()
+        else:
+          posts = Post.objects.filter(author=request.user)
+          
         print(f"Posts found: {posts.count()}")
         for post in posts:
             print(f"Post: {post.title} by {post.author.username}")
@@ -172,7 +179,7 @@ class PostListCreate(APIView):
     def post(self, request):
         serializer = PostSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(author=request.user)  # Set the author to the authenticated user
+            serializer.save(author=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -182,7 +189,6 @@ class PostListCreate(APIView):
         except Post.DoesNotExist:
             return Response({"error": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        # Check if the user is the author or an admin
         if request.user != post.author and not request.user.is_admin:
             return Response({"error": "You do not have permission to edit this post."}, status=status.HTTP_403_FORBIDDEN)
 
@@ -198,7 +204,6 @@ class PostListCreate(APIView):
         except Post.DoesNotExist:
             return Response({"error": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        # Check if the user is the author or an admin
         if request.user != post.author and not request.user.is_admin:
             return Response({"error": "You do not have permission to delete this post."}, status=status.HTTP_403_FORBIDDEN)
 
@@ -228,7 +233,7 @@ class CommentListCreate(APIView):
     def post(self, request):
         serializer = CommentSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(author=request.user)  # Set the author to the authenticated user
+            serializer.save(author=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
