@@ -205,13 +205,6 @@ class CreateCommentView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, id):
-      comments = Comment.objects.filter(post_id=id) if not request.user.is_admin else Comment.objects.all()
-      paginator = CommentPagination()
-      paginated_comments = paginator.paginate_queryset(comments, request)
-      serializer = CommentSerializer(paginated_comments, many=True)
-      return paginator.get_paginated_response(serializer.data)
-
     def post(self, request, id):
         data = request.data.copy()
         data['post'] = id
@@ -221,6 +214,13 @@ class CreateCommentView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    def get(self, request, id):
+      comments = Comment.objects.filter(post_id=id).order_by('-created_at') if not request.user.is_admin else Comment.objects.all().order_by('-created_at')
+      paginator = CommentPagination()
+      paginated_comments = paginator.paginate_queryset(comments, request)
+      serializer = CommentSerializer(paginated_comments, many=True)
+      return paginator.get_paginated_response(serializer.data)
+  
     def put(self, request, id):
         try:
             comment = Comment.objects.get(id=request.data['id'], post_id=id)
