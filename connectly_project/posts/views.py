@@ -17,6 +17,8 @@ from .serializers import UserSerializer, PostSerializer, CommentSerializer, Like
 from .singletons.config_manager import ConfigManager
 from .singletons.logger_singleton import LoggerSingleton
 from .factories.post_factory import PostFactory
+from rest_framework.pagination import PageNumberPagination
+from .pagination import CommentPagination
 
 config = ConfigManager()
 config.set_setting("DEFAULT_PAGE_SIZE", 50)
@@ -158,9 +160,16 @@ class CreatePostView(APIView):
                 serializer = PostSerializer(post)
                 comments_count = Comment.objects.filter(post=post).count()
                 likes_count = Likes.objects.filter(post=post).count()
+                comments = Comment.objects.filter(post=post)
+                
+                paginator = CommentPagination()
+                paginated_comments = paginator.paginate_queryset(comments, request)
+                comments_serializer = CommentSerializer(paginated_comments, many=True)
+                
                 post_info = serializer.data
                 post_info['comments_count'] = comments_count
                 post_info['likes_count'] = likes_count
+                post_info['comments'] = paginator.get_paginated_response(comments_serializer.data).data
                 post_data.append(post_info)
             
             return Response(post_data)
@@ -197,9 +206,11 @@ class CreateCommentView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, id):
-        comments = Comment.objects.filter(post_id=id) if not request.user.is_admin else Comment.objects.all()
-        serializer = CommentSerializer(comments, many=True)
-        return Response(serializer.data)
+      comments = Comment.objects.filter(post_id=id) if not request.user.is_admin else Comment.objects.all()
+      paginator = CommentPagination()
+      paginated_comments = paginator.paginate_queryset(comments, request)
+      serializer = CommentSerializer(paginated_comments, many=True)
+      return paginator.get_paginated_response(serializer.data)
 
     def post(self, request, id):
         data = request.data.copy()
