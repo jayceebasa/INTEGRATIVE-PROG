@@ -1,5 +1,6 @@
 from django.db import IntegrityError
 from django.forms import ValidationError
+from django.shortcuts import redirect, render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -7,7 +8,7 @@ from rest_framework.decorators import api_view, authentication_classes, permissi
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
-from django.contrib.auth import authenticate, get_user_model
+from django.contrib.auth import authenticate, get_user_model, logout as auth_logout
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.contrib.auth.password_validation import validate_password
@@ -25,6 +26,13 @@ config.set_setting("DEFAULT_PAGE_SIZE", 50)
 
 logger = LoggerSingleton().get_logger()
 logger.info("API initialized successfully.")
+
+def home(request):
+    return render(request, 'home.html')
+
+def logout_view(request):
+    auth_logout(request)
+    return redirect('/')
 
 @csrf_exempt
 @api_view(['POST'])
