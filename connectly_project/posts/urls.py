@@ -4,6 +4,7 @@ from .views import UserListCreate, CreateCommentView, CreatePostView, login, cre
 
 
 urlpatterns = [
+    path('', views.home, name='home'),
     path('users/', UserListCreate.as_view(), name='user-list-create'),
     path('posts/', CreatePostView.as_view(), name='post-list-create'),
     path('<int:id>/comment/', CreateCommentView.as_view(), name='comment-list-create'),
@@ -13,5 +14,6 @@ urlpatterns = [
     path('register/', create_user, name='create_user'),
     
     path('login/', login, name='login'),
-    path('logout/', logout, name='logout'),
+    path('logout2/', logout, name='logout'),
+    path('logout/', views.logout_view, name='logout'), 
 ]

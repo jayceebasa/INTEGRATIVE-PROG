@@ -19,7 +19,8 @@ from django.urls import path, include
 from connectly_project.views import homepage
 
 urlpatterns = [
-    path('', homepage, name="home"),
+    path('', include('posts.urls')),
+    path('accounts/', include('allauth.urls')),
     path('admin/', admin.site.urls),
     path('api-auth/', include('rest_framework.urls')),  # DRF login/logouts
     path('posts/', include('posts.urls')),

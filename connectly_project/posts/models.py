@@ -17,6 +17,7 @@ class UserManager(BaseUserManager):
     def create_superuser(self, username, email, password=None):
         user = self.create_user(username, email, password)
         user.is_admin = True
+        user.is_staff = True
         user.save(using=self._db)
 
         admin_group, created = Group.objects.get_or_create(name="Admin")
@@ -25,10 +26,11 @@ class UserManager(BaseUserManager):
 
 class User(AbstractBaseUser, PermissionsMixin):
     username = models.CharField(max_length=100, unique=True)
-    email = models.EmailField(unique=True)
+    email = models.EmailField(unique=False)
     created_at = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
     is_admin = models.BooleanField(default=False)
+    is_staff = models.BooleanField(default=False)  # Add this line
 
     objects = UserManager()
 
