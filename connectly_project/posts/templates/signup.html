@@ -1,0 +1,175 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connectly - Sign Up</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f5f7fa url("{% static 'images/pxfuel.jpg' %}") center/cover no-repeat fixed;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        h2 {
+            color: #1a73e8;
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+        }
+
+        .signup-form {
+            margin-bottom: 1rem;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #1a73e8;
+        }
+
+        .signup-btn {
+            display: inline-block;
+            background: #1a73e8;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .signup-btn:hover {
+            background: #1557b0;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(26, 115, 232, 0.2);
+        }
+
+        .login-link {
+            margin-top: 1rem;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .login-link a {
+            color: #1a73e8;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+
+        .error-message {
+            color: #dc3545;
+            font-size: 14px;
+            margin-top: 0.5rem;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Create Account</h2>
+        <form class="signup-form" id="signupForm">
+            <input type="text" name="username" placeholder="Username" class="input-field" required>
+            <input type="email" name="email" placeholder="Email" class="input-field" required>
+            <input type="password" name="password" placeholder="Password" class="input-field" required>
+            <input type="password" name="confirm_password" placeholder="Confirm Password" class="input-field" required>
+            <button type="submit" class="signup-btn">Sign Up</button>
+            <p class="error-message" id="errorMessage"></p>
+        </form>
+        <p class="login-link">Already have an account? <a href="/">Sign In</a></p>
+    </div>
+
+    <script>
+      document.getElementById('signupForm').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const formData = new FormData(e.target);
+          
+          // Password validation
+          if (formData.get('password') !== formData.get('confirm_password')) {
+              const errorMessage = document.getElementById('errorMessage');
+              errorMessage.textContent = 'Passwords do not match';
+              errorMessage.style.display = 'block';
+              return;
+          }
+  
+          try {
+              const response = await fetch('/register/', {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                      username: formData.get('username'),
+                      email: formData.get('email'),
+                      password: formData.get('password')
+                  })
+              });
+  
+              const data = await response.json();
+              
+              if (response.ok) {
+                  // Redirect to login page on successful registration
+                  window.location.href = '/';
+              } else {
+                  // Display error message from the server
+                  const errorMessage = document.getElementById('errorMessage');
+                  if (data.password) {
+                      // Handle password validation errors
+                      errorMessage.textContent = Array.isArray(data.password) ? data.password[0] : data.password;
+                  } else if (data.error) {
+                      // Handle other errors
+                      errorMessage.textContent = data.error;
+                  } else {
+                      // Handle validation errors
+                      const errors = Object.values(data).flat();
+                      errorMessage.textContent = errors[0] || 'Registration failed';
+                  }
+                  errorMessage.style.display = 'block';
+              }
+          } catch (error) {
+              console.error('Error:', error);
+              const errorMessage = document.getElementById('errorMessage');
+              errorMessage.textContent = 'An error occurred. Please try again.';
+              errorMessage.style.display = 'block';
+          }
+      });
+  </script>
+</body>
+</html>

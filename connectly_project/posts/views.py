@@ -8,7 +8,7 @@ from rest_framework.decorators import api_view, authentication_classes, permissi
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
-from django.contrib.auth import authenticate, get_user_model, logout as auth_logout
+from django.contrib.auth import authenticate, get_user_model, logout as auth_logout, login as auth_login
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.contrib.auth.password_validation import validate_password
@@ -29,6 +29,9 @@ logger.info("API initialized successfully.")
 
 def home(request):
     return render(request, 'home.html')
+
+def signup(request):
+    return render(request, 'signup.html')
 
 def logout_view(request):
     auth_logout(request)
@@ -85,8 +88,15 @@ def login(request):
     user = authenticate(username=username, password=password)
     
     if user is not None:
+        auth_login(request, user)  # Add this line to create the session
         token, created = Token.objects.get_or_create(user=user)
-        return Response({'token': token.key}, status=status.HTTP_200_OK)
+        return Response({
+            'token': token.key,
+            'user': {
+                'username': user.username,
+                'email': user.email
+            }
+        }, status=status.HTTP_200_OK)
     else:
         return Response({'detail': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 

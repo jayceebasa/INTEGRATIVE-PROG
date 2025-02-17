@@ -190,3 +190,16 @@ LOGOUT_REDIRECT_URL = '/'
 
 ACCOUNT_ADAPTER = 'posts.adapters.MyAccountAdapter'
 SOCIALACCOUNT_ADAPTER = 'posts.adapters.MySocialAccountAdapter'
+
+
+SOCIALACCOUNT_LOGIN_ON_GET = True
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_UNIQUE_EMAIL = True
+ACCOUNT_USERNAME_REQUIRED = False
+
+
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]

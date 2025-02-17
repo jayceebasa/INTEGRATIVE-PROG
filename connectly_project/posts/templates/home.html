@@ -1,18 +1,282 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>django google sign in</title>
-</head>
-<body>
-{% load socialaccount %}
-<h2>Google Login</h2>
-<a href="{% provider_login_url 'google' %}?next=/">Login With Google</a>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Connectly - Sign In</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
 
-{% if user.is_authenticated %}
-  <h2>Welcome {{ user.username }}</h2>
-  <a href="logout">Logout</a>
-{% endif %}
-</body>
+      body {
+        font-family: "Inter", sans-serif;
+        background: #f5f7fa url("{% static 'images/pxfuel.jpg' %}") center/cover no-repeat fixed;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0;
+    }
+
+      .container {
+        background: white;
+        padding: 2.5rem;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        width: 90%;
+        max-width: 400px;
+      }
+
+      h2 {
+        color: #1a73e8;
+        margin-bottom: 1.5rem;
+        font-weight: 600;
+      }
+
+      .google-btn {
+        display: inline-block;
+        background: #1a73e8;
+        color: white;
+        padding: 12px 24px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        margin: 1rem 0;
+      }
+
+      .google-btn:hover {
+        background: #1557b0;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(26, 115, 232, 0.2);
+      }
+
+      .logout-btn {
+        display: inline-block;
+        background: #dc3545;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        margin-top: 1rem;
+      }
+
+      .logout-btn:hover {
+        background: #bb2d3b;
+        transform: translateY(-2px);
+      }
+
+      .welcome-msg {
+        color: #333;
+        margin-bottom: 1rem;
+      }
+      .login-form {
+        margin-bottom: 1rem;
+      }
+
+      .input-field {
+        width: 100%;
+        padding: 12px;
+        margin: 8px 0;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-family: "Inter", sans-serif;
+        font-size: 14px;
+        transition: border-color 0.3s ease;
+      }
+
+      .input-field:focus {
+        outline: none;
+        border-color: #1a73e8;
+      }
+
+      .login-btn {
+        display: inline-block;
+        background: #1a73e8;
+        color: white;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 8px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        width: 100%;
+        font-family: "Inter", sans-serif;
+      }
+
+      .login-btn:hover {
+        background: #1557b0;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(26, 115, 232, 0.2);
+      }
+
+      .divider {
+        margin: 1.5rem 0;
+        display: flex;
+        align-items: center;
+        text-align: center;
+      }
+
+      .divider::before,
+      .divider::after {
+        content: "";
+        flex: 1;
+        border-bottom: 1px solid #ddd;
+      }
+
+      .divider span {
+        padding: 0 10px;
+        color: #666;
+        font-size: 14px;
+      }
+
+      .error-message {
+        color: #dc3545;
+        font-size: 14px;
+        margin-top: 0.5rem;
+        display: none;
+      }
+
+      .google-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        background: white;
+        color: #757575;
+        border: 1px solid #ddd;
+        padding: 12px 24px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        margin: 1rem auto;
+        max-width: 240px;
+      }
+
+      .google-btn:hover {
+        background: #f8f9fa;
+        transform: translateY(-2px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .google-icon {
+        width: 18px;
+        height: 18px;
+        display: inline-block;
+      }
+
+      .signup-btn {
+        display: inline-block;
+        background: white;
+        color: #1a73e8;
+        padding: 12px 24px;
+        border: 1px solid #1a73e8;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        width: 100%;
+        font-family: "Inter", sans-serif;
+        margin-top: 8px;
+      }
+
+      .signup-btn:hover {
+        background: #f8f9fa;
+        transform: translateY(-2px);
+        box-shadow: 0 2px 8px rgba(26, 115, 232, 0.1);
+      }
+
+      .auth-links {
+        margin-top: 1rem;
+        font-size: 14px;
+        color: #666;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      {% load socialaccount %} {% if user.is_authenticated %}
+      <h2 class="welcome-msg">Welcome, {{ user.username }}!</h2>
+      <a href="logout" class="logout-btn">Logout</a>
+      {% else %}
+      <h2>Welcome to Connectly</h2>
+      <form class="login-form" id="loginForm">
+        <input type="text" name="username" placeholder="Username" class="input-field" required />
+        <input type="password" name="password" placeholder="Password" class="input-field" required />
+        <button type="submit" class="login-btn">Sign In</button>
+        <button type="button" class="signup-btn" onclick="window.location.href='/signup'">Sign Up</button>
+        <p class="error-message" id="errorMessage"></p>
+      </form>
+
+      <div class="divider">
+        <span>OR</span>
+      </div>
+
+      <a href="{% provider_login_url 'google' %}" class="google-btn">
+        <svg class="google-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+          <path
+            fill="#EA4335"
+            d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+          <path
+            fill="#FBBC05"
+            d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+          <path
+            fill="#34A853"
+            d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+          <path fill="none" d="M0 0h48v48H0z" />
+        </svg>
+        <span>Sign in with Google</span>
+      </a>
+      {% endif %}
+    </div>
+
+    <script>
+      document.getElementById("loginForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        try {
+          const response = await fetch("/login/", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              username: formData.get("username"),
+              password: formData.get("password"),
+            }),
+            credentials: "include", // Add this line to include cookies
+          });
+
+          const data = await response.json();
+
+          if (response.ok) {
+            // Store the token if needed
+            localStorage.setItem("token", data.token);
+            // Reload the page to show authenticated state
+            window.location.href = "/"; // Change from reload() to href='/'
+          } else {
+            const errorMessage = document.getElementById("errorMessage");
+            errorMessage.textContent = data.detail || "Login failed";
+            errorMessage.style.display = "block";
+          }
+        } catch (error) {
+          console.error("Error:", error);
+          const errorMessage = document.getElementById("errorMessage");
+          errorMessage.textContent = "An error occurred. Please try again.";
+          errorMessage.style.display = "block";
+        }
+      });
+    </script>
+  </body>
 </html>
