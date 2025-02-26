@@ -363,6 +363,7 @@
         transform: scale(1.2);
         transition: transform 0.2s ease;
       }
+      
     </style>
     <link rel="stylesheet" href="{% static 'css/base.css' %}" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
@@ -377,7 +378,15 @@
         <div class="post-creation-card">
           <div class="post-input-wrapper">
             <img src="{{ user.profile_picture.url|default:'/media/profile_pictures/default.png' }}" alt="Profile" class="post-author-pic" />
-            <div class="post-input" onclick="openCreatePostModal()">What's on your mind, {{ user.username }}?</div>
+            <div class="post-input" onclick="openCreatePostModal()">What's on your mind, 
+              {% if user.socialaccount_set.all.0 %} 
+              {% with account=user.socialaccount_set.all.0 %}
+                {{ account.extra_data.given_name }} {{ account.extra_data.family_name}}?
+              {% endwith %} 
+              {% else %}
+              {{ user.username}}?
+              {% endif %}
+            </div>
           </div>
           <div class="post-actions">
             <button class="post-action-btn">
@@ -397,7 +406,15 @@
           <div class="post-header">
             <img src="{{ post.author.profile_picture.url|default:'/media/profile_pictures/default.png' }}" alt="Profile" class="post-author-pic" />
             <div class="post-author-info">
-              <div class="post-author-name">{{ post.author.username }}</div>
+                <div class="post-author-name">
+                {% if post.author.socialaccount_set.all.0 %}
+                {% with account=post.author.socialaccount_set.all.0 %}
+                  {{ account.extra_data.given_name }} {{ account.extra_data.family_name }}
+                {% endwith %}
+                {% else %}
+                  {{ post.author.username }}
+                {% endif %}
+                </div>
               <div class="post-timestamp">{{ post.created_at|timesince }} ago</div>
             </div>
           </div>
