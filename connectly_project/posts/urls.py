@@ -12,13 +12,14 @@ urlpatterns = [
     path('posts/', CreatePostView.as_view(), name='post-list-create'),
     path('<int:id>/comment/', CreateCommentView.as_view(), name='comment-list-create'),
     path('<int:id>/like/', LikesView.as_view(), name='likes-list-create'),
+    path('api/auth/check/', views.check_auth, name='check-auth'),
 
     path('create_admin/', create_superuser, name='create_superuser'),
     path('register/', create_user, name='create_user'),
     
     path('login/', login, name='login'),
-    path('logout2/', logout, name='logout'),
-    path('logout/', views.logout_view, name='logout'),
+    path('logout/', logout, name='logout'),
+    path('logout2/', views.logout_view, name='logout'),
     
     path('signup/', views.signup, name='signup'),
     

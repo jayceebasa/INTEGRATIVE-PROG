@@ -1,15 +1,16 @@
 from django.db import IntegrityError
 from django.forms import ValidationError
+from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework.authentication import TokenAuthentication
+from rest_framework.authentication import TokenAuthentication, SessionAuthentication
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate, get_user_model, logout as auth_logout, login as auth_login
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from django.contrib.auth.password_validation import validate_password
@@ -28,12 +29,27 @@ config.set_setting("DEFAULT_PAGE_SIZE", 50)
 logger = LoggerSingleton().get_logger()
 logger.info("API initialized successfully.")
 
+@ensure_csrf_cookie
+def check_auth(request):
+    """Check if the user is authenticated and return appropriate response"""
+    if request.user.is_authenticated:
+        return JsonResponse({
+            'isAuthenticated': True,
+            'username': request.user.username
+        })
+    return JsonResponse({'isAuthenticated': False})
+
 def login_page(request):
     return render(request, 'login.html')
 
 @login_required
 def homepage(request):
-    return render(request, 'homepage.html')
+    posts = Post.objects.all().order_by('-created_at')
+    
+    for post in posts:
+        post.is_liked_by_user = Likes.objects.filter(post=post, user=request.user).exists()
+    
+    return render(request, 'homepage.html', {'posts': posts})
 
 def signup(request):
     return render(request, 'signup.html')
@@ -107,9 +123,19 @@ def login(request):
 
 @csrf_exempt
 @api_view(['POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
 def logout(request):
+  try:
     request.user.auth_token.delete()
-    return Response(status=status.HTTP_200_OK)
+  except (AttributeError, Token.DoesNotExist):
+    pass
+  auth_logout(request)
+  response = Response({"message": "Logged out successfully. Please remove the token from local storage."}, status=status.HTTP_200_OK)
+  response.delete_cookie('sessionid')
+  response.delete_cookie('csrftoken')
+  response['Clear-Site-Data'] = '"storage"'
+  return response
 
 
 class ProtectedView(APIView):
@@ -155,6 +181,9 @@ class UserListCreate(APIView):
 
 
 class CreatePostView(APIView):
+    
+    authentication_classes = [SessionAuthentication, TokenAuthentication]
+    permission_classes = [IsAuthenticated]
     def post(self, request):
         data = request.data
         if not data.get('content') or not data.get('title'):
@@ -225,7 +254,7 @@ class CreatePostView(APIView):
       return Response(status=status.HTTP_204_NO_CONTENT)
 
 class CreateCommentView(APIView):
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [SessionAuthentication, TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
     def post(self, request, id):
@@ -277,25 +306,38 @@ import logging
 logger = logging.getLogger(__name__)
 
 class LikesView(APIView):
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [SessionAuthentication, TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
     def post(self, request, id):
-        logger.debug(f"Request data: {request.data}")
-        if not request.data:
-            return Response({"error": "Request data is missing or not properly formatted."}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            post = Post.objects.get(id=id)
+            user = request.user
+            
+            # Check if user already liked this post
+            like_exists = Likes.objects.filter(post=post, user=user).exists()
+            
+            # Toggle like status
+            if like_exists:
+                # Unlike the post
+                Likes.objects.filter(post=post, user=user).delete()
+                liked = False
+            else:
+                # Like the post
+                Likes.objects.create(post=post, user=user)
+                liked = True
+                
+            # Return updated like count and status
+            likes_count = post.likes.count()
+            return Response({
+                'liked': liked,
+                'likes_count': likes_count
+            }, status=status.HTTP_200_OK)
         
-        data = request.data.copy()
-        data['post'] = id
-        serializer = LikesSerializer(data=data, context={'request': request})
-        if serializer.is_valid():
-            try:
-                serializer.save()
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
-            except IntegrityError:
-                return Response({"error": "You have already liked this post."}, status=status.HTTP_400_BAD_REQUEST)
-        logger.debug(f"Serializer errors: {serializer.errors}")
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Post.DoesNotExist:
+            return Response({"error": "Post not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
       
     def delete(self, request, id):
         try:

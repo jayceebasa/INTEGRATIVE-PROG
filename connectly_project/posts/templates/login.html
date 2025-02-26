@@ -205,8 +205,9 @@
   <body>
     <div class="container">
       {% load socialaccount %} {% if user.is_authenticated %}
-      <h2 class="welcome-msg">Welcome, {{ user.username }}!</h2>
-      <a href="logout" class="logout-btn">Logout</a>
+      <script>
+        window.location.href = "/homepage/";
+      </script>
       {% else %}
       <h2>Welcome to Connectly</h2>
       <form class="login-form" id="loginForm">

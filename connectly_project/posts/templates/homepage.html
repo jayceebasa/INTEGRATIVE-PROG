@@ -30,7 +30,7 @@
         z-index: -1;
         filter: blur(5px); /* Add blur effect - adjust the pixel value as needed */
         transform: scale(1.1); /* Prevents blur edges from showing */
-}
+      }
 
       .content-wrapper {
         position: relative; /* Add position relative */
@@ -55,18 +55,761 @@
         text-decoration: none;
         float: right;
       }
+
+      /* Facebook-style post styles */
+      .main-content {
+        max-width: 680px;
+        margin: 0 auto;
+        padding-top: 20px;
+      }
+
+      .post-creation-card {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        margin: 20px auto;
+        padding: 16px;
+      }
+
+      .post-input-wrapper {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        padding: 8px;
+        border-bottom: 1px solid #eee;
+      }
+
+      .post-input {
+        flex-grow: 1;
+        padding: 12px;
+        border: none;
+        background: #f0f2f5;
+        border-radius: 20px;
+        cursor: pointer;
+      }
+
+      .post-actions {
+        display: flex;
+        justify-content: space-around;
+        padding-top: 12px;
+      }
+
+      .post-action-btn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        border: none;
+        background: none;
+        border-radius: 8px;
+        cursor: pointer;
+        color: #65676b;
+        font-weight: 600;
+      }
+
+      .post-action-btn:hover {
+        background: #f0f2f5;
+      }
+
+      .post-card {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        margin: 20px auto;
+      }
+
+      .post-header {
+        display: flex;
+        align-items: center;
+        padding: 12px 16px;
+        gap: 8px;
+      }
+
+      .post-author-pic {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+
+      .post-author-info {
+        flex-grow: 1;
+      }
+
+      .post-author-name {
+        font-weight: 600;
+        color: #333;
+      }
+
+      .post-timestamp {
+        font-size: 0.8rem;
+        color: #65676b;
+      }
+
+      .post-content {
+        padding: 12px 16px;
+      }
+
+      .post-footer {
+        border-top: 1px solid #eee;
+        padding: 8px 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .post-stats {
+        display: flex;
+        gap: 8px;
+        color: #65676b;
+        font-size: 0.9rem;
+      }
+
+      .post-actions-footer {
+        display: flex;
+        justify-content: space-around;
+        padding: 4px 16px;
+        border-top: 1px solid #eee;
+      }
+
+      .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+      }
+
+      .modal-content {
+        background: white;
+        width: 90%;
+        max-width: 500px;
+        margin: 100px auto;
+        border-radius: 8px;
+        padding: 20px;
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+
+      .close {
+        cursor: pointer;
+        font-size: 24px;
+      }
+
+      .create-post-form {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .create-post-form input,
+      .create-post-form textarea,
+      .create-post-form select {
+        padding: 12px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 1rem;
+      }
+
+      .create-post-form button {
+        background: #1a73e8;
+        color: white;
+        padding: 12px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+      }
+
+      .create-post-form button:hover {
+        opacity: 0.9;
+      }
+
+      .comments-section {
+        display: none;
+        background-color: #f8f9fa;
+        padding: 12px 16px;
+        border-top: 1px solid #eee;
+      }
+
+      .comments-list {
+        max-height: 300px;
+        overflow-y: auto;
+        margin-bottom: 12px;
+      }
+
+      .comment {
+        display: flex;
+        margin-bottom: 8px;
+        gap: 8px;
+        position: relative;
+      }
+
+      .delete-comment-btn {
+        display: none;
+        position: absolute;
+        right: 5px;
+        top: 5px;
+        color: #65676b;
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        padding: 3px 6px;
+        border-radius: 50%;
+      }
+
+      .delete-comment-btn:hover {
+        background-color: rgba(0, 0, 0, 0.1);
+        color: #dc3545;
+      }
+
+      .comment:hover .delete-comment-btn {
+        display: block;
+      }
+
+      .modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 15px;
+      }
+
+      .cancel-btn {
+        background: #f0f2f5;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-weight: 500;
+        cursor: pointer;
+      }
+
+      .delete-btn {
+        background: #dc3545;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-weight: 500;
+        cursor: pointer;
+      }
+
+      .comment-author-pic {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+
+      .comment-bubble {
+        background-color: #f0f2f5;
+        border-radius: 18px;
+        padding: 8px 12px;
+        max-width: 80%;
+      }
+
+      .comment-author {
+        font-weight: 600;
+        font-size: 0.85rem;
+        margin-bottom: 2px;
+      }
+
+      .comment-text {
+        font-size: 0.9rem;
+      }
+
+      .comment-form {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .comment-input {
+        flex-grow: 1;
+        padding: 8px 12px;
+        border: none;
+        background: #f0f2f5;
+        border-radius: 20px;
+      }
+
+      .comment-submit {
+        border: none;
+        background: var(--primary-color);
+        color: white;
+        border-radius: 50%;
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+      }
+
+      .liked {
+        color: #1877f2;
+        font-weight: bold;
+        text-shadow: 0 0 5px rgba(24, 119, 242, 0.4);
+      }
+
+      .liked i {
+        transform: scale(1.2);
+        transition: transform 0.2s ease;
+      }
     </style>
     <link rel="stylesheet" href="{% static 'css/base.css' %}" />
-    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   </head>
   <body>
     <div class="background-image"></div>
     <div class="content-wrapper">
       {% include 'partials/header.html' %}
-      <div>
-        <h3>testing</h3>
-        <img src="{{user.profile_picture.url}}" alt="" />
+
+      <div class="main-content">
+        <!-- Create Post Card -->
+        <div class="post-creation-card">
+          <div class="post-input-wrapper">
+            <img src="{{ user.profile_picture.url|default:'/media/profile_pictures/default.png' }}" alt="Profile" class="post-author-pic" />
+            <div class="post-input" onclick="openCreatePostModal()">What's on your mind, {{ user.username }}?</div>
+          </div>
+          <div class="post-actions">
+            <button class="post-action-btn">
+              <i class="fas fa-image"></i>
+              Photo/Video
+            </button>
+            <button class="post-action-btn">
+              <i class="fas fa-smile"></i>
+              Feeling/Activity
+            </button>
+          </div>
+        </div>
+
+        <!-- Posts Feed -->
+        {% for post in posts %}
+        <div class="post-card" id="post-{{post.id}}">
+          <div class="post-header">
+            <img src="{{ post.author.profile_picture.url|default:'/media/profile_pictures/default.png' }}" alt="Profile" class="post-author-pic" />
+            <div class="post-author-info">
+              <div class="post-author-name">{{ post.author.username }}</div>
+              <div class="post-timestamp">{{ post.created_at|timesince }} ago</div>
+            </div>
+          </div>
+          <div class="post-content">
+            <h3>{{ post.title }}</h3>
+            <p>{{ post.content }}</p>
+          </div>
+          <div class="post-footer">
+            <div class="post-stats">
+              <span id="likes-count-{{post.id}}"><i class="fas fa-thumbs-up"></i> {{ post.likes.count }}</span>
+              <span id="comments-count-{{post.id}}">{{ post.comments.count }} comments</span>
+            </div>
+          </div>
+          <div class="post-actions-footer">
+            <button class="post-action-btn {% if post.is_liked_by_user %}liked{% endif %}" id="like-btn-{{post.id}}" onclick="likePost('{{ post.id }}')">
+              <i class="{% if post.is_liked_by_user %}fas{% else %}far{% endif %} fa-thumbs-up"></i> {% if post.is_liked_by_user %}Liked{% else %}Like{% endif %}
+            </button>
+            <button class="post-action-btn" onclick="toggleComments('{{ post.id }}')"><i class="far fa-comment"></i> Comment</button>
+          </div>
+
+          <!-- Comments Section -->
+          <div class="comments-section" id="comments-section-{{post.id}}">
+            <div class="comments-list" id="comments-list-{{post.id}}">
+              {% for comment in post.comments.all %}
+              <div class="comment" id="comment-{{comment.id}}">
+                <img src="{{ comment.author.profile_picture.url|default:'/media/profile_pictures/default.png' }}" alt="Profile" class="comment-author-pic" />
+                <div class="comment-bubble">
+                  <div class="comment-author">{{ comment.author.username }}</div>
+                  <div class="comment-text">{{ comment.text }}</div>
+                </div>
+                {% if comment.author.id == user.id %}
+                <button class="delete-comment-btn" onclick="showDeleteModal('{{comment.id}}', '{{post.id}}')">
+                  <i class="fas fa-trash"></i>
+                </button>
+                {% endif %}
+              </div>
+              {% endfor %}
+            </div>
+            <div class="comment-form">
+              <img src="{{ user.profile_picture.url|default:'/media/profile_pictures/default.png' }}" alt="Profile" class="comment-author-pic" />
+              <input type="text" class="comment-input" id="comment-input-{{post.id}}" placeholder="Write a comment..." />
+              <button class="comment-submit" onclick="addComment('{{ post.id }}')">
+                <i class="fas fa-paper-plane"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Create Post Modal -->
+      <div id="createPostModal" class="modal">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2>Create Post</h2>
+            <span class="close" onclick="closeCreatePostModal()">&times;</span>
+          </div>
+          <form class="create-post-form" onsubmit="createPost(event)">
+            {% csrf_token %}
+            <input type="text" name="title" placeholder="Post Title" required />
+            <textarea name="content" placeholder="What's on your mind?" rows="4" required></textarea>
+            <select name="post_type" required>
+              <option value="text">Text</option>
+              <option value="image">Image</option>
+              <option value="video">Video</option>
+            </select>
+            <button type="submit">Post</button>
+          </form>
+        </div>
+      </div>
+
+      <div id="deleteCommentModal" class="modal">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2>Delete Comment</h2>
+            <span class="close" onclick="closeDeleteCommentModal()">&times;</span>
+          </div>
+          <div class="modal-body">
+            <p>Are you sure you want to delete this comment? This action cannot be undone.</p>
+          </div>
+          <div class="modal-footer">
+            <button class="cancel-btn" onclick="closeDeleteCommentModal()">Cancel</button>
+            <button class="delete-btn" id="confirmDeleteComment">Delete</button>
+          </div>
+        </div>
       </div>
     </div>
+
+    <script>
+      // Store auth token
+      let authToken = localStorage.getItem("token");
+    
+      async function getAuthToken() {
+        // If using OAuth (no token in storage)
+        if (!authToken) {
+          try {
+            // Check if user is authenticated via session
+            const checkResponse = await fetch("/api/auth/check/", {
+              headers: {
+                "X-CSRFToken": getCookie("csrftoken"),
+              },
+              credentials: "include", // Important to include cookies
+            });
+    
+            if (checkResponse.ok) {
+              const data = await checkResponse.json();
+              if (data.isAuthenticated) {
+                // User is authenticated via session, we can use CSRF for further requests
+                return null; // We'll use session authentication instead of token
+              }
+            }
+          } catch (error) {
+            console.error("Error checking auth status:", error);
+          }
+        }
+        return authToken;
+      }
+    
+      function openCreatePostModal() {
+        document.getElementById("createPostModal").style.display = "block";
+      }
+    
+      function closeCreatePostModal() {
+        document.getElementById("createPostModal").style.display = "none";
+      }
+    
+      // Update createPost function
+      async function createPost(event) {
+        event.preventDefault();
+        const form = event.target;
+        const formData = new FormData(form);
+    
+        try {
+          const token = await getAuthToken();
+    
+          // Setup headers
+          const headers = {
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCookie("csrftoken"),
+          };
+    
+          if (token) {
+            headers["Authorization"] = `Token ${token}`;
+          }
+    
+          const response = await fetch("/posts/", {
+            method: "POST",
+            headers: headers,
+            credentials: 'include',
+            body: JSON.stringify({
+              title: formData.get("title"),
+              content: formData.get("content"),
+              post_type: formData.get("post_type"),
+            }),
+          });
+    
+          if (response.ok) {
+            window.location.reload();
+          } else {
+            console.error("Error creating post:", await response.text());
+          }
+        } catch (error) {
+          console.error("Error:", error);
+        }
+      }
+    
+      function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== "") {
+          const cookies = document.cookie.split(";");
+          for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === name + "=") {
+              cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+              break;
+            }
+          }
+        }
+        return cookieValue;
+      }
+    
+      // Update likePost function
+      async function likePost(postId) {
+        try {
+          // Get the current elements
+          const likeBtn = document.getElementById(`like-btn-${postId}`);
+          const likesCountEl = document.getElementById(`likes-count-${postId}`);
+          const isCurrentlyLiked = likeBtn.classList.contains("liked");
+          const currentCount = parseInt(likesCountEl.textContent.trim().match(/\d+/) || "0");
+    
+          // Make the API request first (don't update UI optimistically)
+          const token = await getAuthToken();
+    
+          // Setup headers - include token only if available
+          const headers = {
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCookie("csrftoken"),
+          };
+    
+          if (token) {
+            headers["Authorization"] = `Token ${token}`;
+          }
+    
+          const response = await fetch(`/${postId}/like/`, {
+            method: "POST",
+            headers: headers,
+            credentials: "include", // Include cookies for session authentication
+            body: JSON.stringify({ post_id: postId }),
+          });
+    
+          if (response.ok) {
+            const data = await response.json();
+    
+            // Update UI based on the server's response
+            if (data.liked) {
+              // Post is liked
+              likeBtn.classList.add("liked");
+              likeBtn.innerHTML = '<i class="fas fa-thumbs-up"></i> Liked';
+            } else {
+              // Post is not liked
+              likeBtn.classList.remove("liked");
+              likeBtn.innerHTML = '<i class="far fa-thumbs-up"></i> Like';
+            }
+    
+            // Update the like count
+            likesCountEl.innerHTML = `<i class="fas fa-thumbs-up"></i> ${data.likes_count}`;
+          } else {
+            console.error("Error liking post:", await response.text());
+            alert("Failed to update like status. Please try again.");
+          }
+        } catch (error) {
+          console.error("Error:", error);
+        }
+      }
+    
+      function toggleComments(postId) {
+        const commentsSection = document.getElementById(`comments-section-${postId}`);
+        if (commentsSection.style.display === "block") {
+          commentsSection.style.display = "none";
+        } else {
+          commentsSection.style.display = "block";
+        }
+      }
+    
+      let commentToDelete = null;
+      let postIdForDelete = null;
+    
+      function showDeleteModal(commentId, postId) {
+        commentToDelete = commentId;
+        postIdForDelete = postId;
+        document.getElementById("deleteCommentModal").style.display = "block";
+    
+        // Add event listener to confirm button
+        document.getElementById("confirmDeleteComment").onclick = function () {
+          deleteComment(commentId, postId);
+        };
+      }
+    
+      function closeDeleteCommentModal() {
+        document.getElementById("deleteCommentModal").style.display = "none";
+        commentToDelete = null;
+        postIdForDelete = null;
+      }
+    
+      // Update deleteComment function
+      async function deleteComment(commentId, postId) {
+        try {
+          const token = await getAuthToken();
+    
+          // Setup headers
+          const headers = {
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCookie("csrftoken"),
+          };
+    
+          if (token) {
+            headers["Authorization"] = `Token ${token}`;
+          }
+    
+          const response = await fetch(`/${postId}/comment/`, {
+            method: "DELETE",
+            headers: headers,
+            credentials: 'include',
+            body: JSON.stringify({
+              id: commentId,
+            }),
+          });
+    
+          if (response.ok) {
+            // Remove comment from UI
+            const commentElement = document.getElementById(`comment-${commentId}`);
+            if (commentElement) {
+              commentElement.remove();
+            }
+    
+            // Update comment count
+            const commentsCountEl = document.getElementById(`comments-count-${postId}`);
+            const currentCount = parseInt(commentsCountEl.textContent.match(/\d+/) || "0");
+            commentsCountEl.textContent = `${Math.max(0, currentCount - 1)} comments`;
+    
+            closeDeleteCommentModal();
+          } else {
+            console.error("Error deleting comment:", await response.text());
+            alert("Failed to delete comment. Please try again.");
+          }
+        } catch (error) {
+          console.error("Error:", error);
+          alert("An error occurred while deleting the comment.");
+        }
+      }
+    
+      async function addComment(postId) {
+        const commentInput = document.getElementById(`comment-input-${postId}`);
+        const commentText = commentInput.value.trim();
+      
+        if (!commentText) return;
+      
+        try {
+          const token = await getAuthToken();
+      
+          // Setup headers
+          const headers = {
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCookie("csrftoken"),
+          };
+      
+          if (token) {
+            headers["Authorization"] = `Token ${token}`;
+          }
+      
+          const response = await fetch(`/${postId}/comment/`, {
+            method: "POST",
+            headers: headers,
+            credentials: 'include',
+            body: JSON.stringify({
+              text: commentText,
+            }),
+          });
+      
+          if (response.ok) {
+            const data = await response.json();
+            console.log("Comment response:", data); // Keep for debugging
+      
+            // Update comment count immediately
+            const commentsCountEl = document.getElementById(`comments-count-${postId}`);
+            let newCount;
+            
+            if (data.comments_count !== undefined) {
+              newCount = data.comments_count;
+            } else {
+              const currentCount = parseInt(commentsCountEl.textContent.match(/\d+/) || "0");
+              newCount = currentCount + 1;
+            }
+            
+            commentsCountEl.textContent = `${newCount} comments`;
+      
+            // Make sure comments section is visible
+            const commentsSection = document.getElementById(`comments-section-${postId}`);
+            commentsSection.style.display = "block";
+            
+            // Add new comment to the list
+            const commentsList = document.getElementById(`comments-list-${postId}`);
+            const newComment = document.createElement("div");
+            newComment.className = "comment";
+            
+            // Use data.id or data.comment_id (handle different API response formats)
+            const commentId = data.comment_id || data.id || `temp-${Date.now()}`;
+            newComment.id = `comment-${commentId}`;
+            
+            // Get the current user's profile picture from the comment form
+            // This ensures we always have a valid picture URL
+            const currentUserPic = document.querySelector(`#comments-section-${postId} .comment-form .comment-author-pic`).src;
+            
+            // Use multiple fallbacks for profile picture
+            const profilePic = data.author_profile_picture_url || 
+                               data.profile_picture_url || 
+                               (data.author && data.author.profile_picture) || 
+                               currentUserPic || 
+                               '/media/profile_pictures/default.png';
+            
+            const username = data.author_username || 
+                            (data.author && data.author.username) || 
+                            'You';
+            
+            newComment.innerHTML = `
+              <img src="${profilePic}" alt="Profile" class="comment-author-pic">
+              <div class="comment-bubble">
+                <div class="comment-author">${username}</div>
+                <div class="comment-text">${commentText}</div>
+              </div>
+              <button class="delete-comment-btn" onclick="showDeleteModal('${commentId}', '${postId}')">
+                <i class="fas fa-trash"></i>
+              </button>
+            `;
+            
+            commentsList.appendChild(newComment);
+            
+            // Scroll to the new comment
+            newComment.scrollIntoView({ behavior: "smooth", block: "end" });
+      
+            // Clear input
+            commentInput.value = "";
+          } else {
+            const errorText = await response.text();
+            console.error("Error adding comment:", errorText);
+            alert("Failed to add comment: " + (errorText || "Unknown error"));
+          }
+        } catch (error) {
+          console.error("Error:", error);
+          alert("An error occurred while adding your comment");
+        }
+      }
+    </script>
   </body>
 </html>
