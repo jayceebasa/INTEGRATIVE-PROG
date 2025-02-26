@@ -185,7 +185,8 @@ AUTHENTICATION_BACKENDS = (
     'allauth.account.auth_backends.AuthenticationBackend',
 )
 
-LOGIN_REDIRECT_URL = '/'
+LOGIN_REDIRECT_URL = '/homepage/'
+LOGIN_URL = '/'  # This will redirect unauthorized users to the login page
 LOGOUT_REDIRECT_URL = '/'
 
 ACCOUNT_ADAPTER = 'posts.adapters.MyAccountAdapter'
@@ -203,3 +204,6 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')

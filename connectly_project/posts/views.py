@@ -10,6 +10,7 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate, get_user_model, logout as auth_logout, login as auth_login
 from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from django.contrib.auth.password_validation import validate_password
 from .permissions import IsPostAuthor
@@ -27,8 +28,12 @@ config.set_setting("DEFAULT_PAGE_SIZE", 50)
 logger = LoggerSingleton().get_logger()
 logger.info("API initialized successfully.")
 
-def home(request):
-    return render(request, 'home.html')
+def login_page(request):
+    return render(request, 'login.html')
+
+@login_required
+def homepage(request):
+    return render(request, 'homepage.html')
 
 def signup(request):
     return render(request, 'signup.html')

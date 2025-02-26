@@ -1,10 +1,13 @@
 from django.urls import path
+
+from django.conf import settings
+from django.conf.urls.static import static
 from . import views
 from .views import UserListCreate, CreateCommentView, CreatePostView, login, create_superuser, logout, create_user, LikesView
 
 
 urlpatterns = [
-    path('', views.home, name='home'),
+    path('', views.login_page, name='login'),
     path('users/', UserListCreate.as_view(), name='user-list-create'),
     path('posts/', CreatePostView.as_view(), name='post-list-create'),
     path('<int:id>/comment/', CreateCommentView.as_view(), name='comment-list-create'),
@@ -18,4 +21,10 @@ urlpatterns = [
     path('logout/', views.logout_view, name='logout'),
     
     path('signup/', views.signup, name='signup'),
+    
+    #pages
+    path('homepage/', views.homepage, name='homepage'),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

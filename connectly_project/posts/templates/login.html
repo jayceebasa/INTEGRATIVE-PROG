@@ -261,10 +261,8 @@
           const data = await response.json();
 
           if (response.ok) {
-            // Store the token if needed
             localStorage.setItem("token", data.token);
-            // Reload the page to show authenticated state
-            window.location.href = "/"; // Change from reload() to href='/'
+            window.location.href = "/homepage/"; // Changed from "/" to "/homepage/"
           } else {
             const errorMessage = document.getElementById("errorMessage");
             errorMessage.textContent = data.detail || "Login failed";
