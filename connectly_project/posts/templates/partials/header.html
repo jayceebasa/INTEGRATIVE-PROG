@@ -171,7 +171,7 @@
         <span class="username">{{ user.username }}</span>
         {% endif %}
 
-        <a href="{% url 'logout' %}" class="logout-btn" style="margin-right: -200px">Logout</a>
+        <a href="{% url 'logout' %}" class="logout-btn" style="margin-right: -200px" onclick="handleLogout(event)">Logout</a>
         {% else %}
         <a href="{% url 'login' %}" class="nav-link">Login</a>
         {% endif %}
@@ -179,3 +179,11 @@
     </div>
   </div>
 </header>
+
+<script>
+  function handleLogout(event) {
+    event.preventDefault();
+    localStorage.clear();
+    window.location.href = "{% url 'logout' %}";
+  }
+</script>
