@@ -11,6 +11,7 @@ from rest_framework.authentication import TokenAuthentication, SessionAuthentica
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate, get_user_model, logout as auth_logout, login as auth_login
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
+from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from django.contrib.auth.password_validation import validate_password
@@ -44,11 +45,22 @@ def login_page(request):
 
 @login_required
 def homepage(request):
-    posts = Post.objects.all().order_by('-created_at')
+    posts_list = Post.objects.all().order_by('-created_at')
     
-    for post in posts:
+    for post in posts_list:
         post.is_liked_by_user = Likes.objects.filter(post=post, user=request.user).exists()
     
+    # Pagination
+    page = request.GET.get('page', 1)
+    paginator = Paginator(posts_list, 5)  # Show 10 posts per page
+
+    try:
+        posts = paginator.page(page)
+    except PageNotAnInteger:
+        posts = paginator.page(1)
+    except EmptyPage:
+        posts = paginator.page(paginator.num_pages)
+
     return render(request, 'homepage.html', {'posts': posts})
 
 def signup(request):
@@ -258,13 +270,27 @@ class CreateCommentView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, id):
-        data = request.data.copy()
-        data['post'] = id
-        serializer = CommentSerializer(data=data, context={'request': request})
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+      data = request.data.copy()
+      data['post'] = id
+      serializer = CommentSerializer(data=data, context={'request': request})
+      if serializer.is_valid():
+          comment = serializer.save()
+          # Enhance response with additional data needed by frontend
+          response_data = serializer.data
+          response_data['comment_id'] = comment.id  # Explicitly include the comment ID
+          response_data['author_username'] = request.user.username
+          # Get profile picture URL if available
+          if hasattr(request.user, 'profile_picture') and request.user.profile_picture:
+              response_data['author_profile_picture_url'] = request.user.profile_picture.url
+          else:
+              response_data['author_profile_picture_url'] = '/media/profile_pictures/default.png'
+          
+          # Include updated comments count
+          comments_count = Comment.objects.filter(post_id=id).count()
+          response_data['comments_count'] = comments_count
+          
+          return Response(response_data, status=status.HTTP_201_CREATED)
+      return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def get(self, request, id):
       comments = Comment.objects.filter(post_id=id).order_by('-created_at') if not request.user.is_admin else Comment.objects.all().order_by('-created_at')

@@ -363,7 +363,42 @@
         transform: scale(1.2);
         transition: transform 0.2s ease;
       }
-      
+
+      .pagination {
+        margin: 20px 0;
+        text-align: center;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        padding: 12px;
+      }
+    
+      .pagination .step-links {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+      }
+    
+      .pagination a {
+        color: #1877f2;
+        text-decoration: none;
+        padding: 6px 12px;
+        border-radius: 4px;
+        font-weight: 500;
+        transition: background-color 0.2s;
+      }
+    
+      .pagination a:hover {
+        background-color: #f0f2f5;
+        text-decoration: none;
+      }
+    
+      .pagination .current {
+        color: #65676b;
+        font-size: 0.9rem;
+        padding: 6px 10px;
+      }
     </style>
     <link rel="stylesheet" href="{% static 'css/base.css' %}" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
@@ -378,14 +413,8 @@
         <div class="post-creation-card">
           <div class="post-input-wrapper">
             <img src="{{ user.profile_picture.url|default:'/media/profile_pictures/default.png' }}" alt="Profile" class="post-author-pic" />
-            <div class="post-input" onclick="openCreatePostModal()">What's on your mind, 
-              {% if user.socialaccount_set.all.0 %} 
-              {% with account=user.socialaccount_set.all.0 %}
-                {{ account.extra_data.given_name }} {{ account.extra_data.family_name}}?
-              {% endwith %} 
-              {% else %}
-              {{ user.username}}?
-              {% endif %}
+            <div class="post-input" onclick="openCreatePostModal()">
+              What's on your mind, {% if user.socialaccount_set.all.0 %} {% with account=user.socialaccount_set.all.0 %} {{ account.extra_data.given_name }} {{account.extra_data.family_name}}? {% endwith %} {% else %} {{ user.username}}? {% endif %}
             </div>
           </div>
           <div class="post-actions">
@@ -406,15 +435,9 @@
           <div class="post-header">
             <img src="{{ post.author.profile_picture.url|default:'/media/profile_pictures/default.png' }}" alt="Profile" class="post-author-pic" />
             <div class="post-author-info">
-                <div class="post-author-name">
-                {% if post.author.socialaccount_set.all.0 %}
-                {% with account=post.author.socialaccount_set.all.0 %}
-                  {{ account.extra_data.given_name }} {{ account.extra_data.family_name }}
-                {% endwith %}
-                {% else %}
-                  {{ post.author.username }}
-                {% endif %}
-                </div>
+              <div class="post-author-name">
+                {% if post.author.socialaccount_set.all.0 %} {% with account=post.author.socialaccount_set.all.0 %} {{account.extra_data.given_name }} {{account.extra_data.family_name }} {% endwith %} {% else%} {{ post.author.username }} {% endif %}
+              </div>
               <div class="post-timestamp">{{ post.created_at|timesince }} ago</div>
             </div>
           </div>
@@ -430,7 +453,7 @@
           </div>
           <div class="post-actions-footer">
             <button class="post-action-btn {% if post.is_liked_by_user %}liked{% endif %}" id="like-btn-{{post.id}}" onclick="likePost('{{ post.id }}')">
-              <i class="{% if post.is_liked_by_user %}fas{% else %}far{% endif %} fa-thumbs-up"></i> {% if post.is_liked_by_user %}Liked{% else %}Like{% endif %}
+              <i class="{% if post.is_liked_by_user %}fas{% else %}far{% endif %} fa-thumbs-up"></i> {% if post.is_liked_by_user %}Liked{% else %}Like{% endif%}
             </button>
             <button class="post-action-btn" onclick="toggleComments('{{ post.id }}')"><i class="far fa-comment"></i> Comment</button>
           </div>
@@ -463,6 +486,23 @@
           </div>
         </div>
         {% endfor %}
+        <div class="pagination">
+          <span class="step-links">
+            {% if posts.has_previous %}
+              <a href="?page=1">&laquo; first</a>
+              <a href="?page={{ posts.previous_page_number }}">previous</a>
+            {% endif %}
+        
+            <span class="current">
+              Page {{ posts.number }} of {{ posts.paginator.num_pages }}.
+            </span>
+        
+            {% if posts.has_next %}
+              <a href="?page={{ posts.next_page_number }}">next</a>
+              <a href="?page={{ posts.paginator.num_pages }}">last &raquo;</a>
+            {% endif %}
+          </span>
+        </div>
       </div>
 
       <!-- Create Post Modal -->
@@ -506,7 +546,7 @@
     <script>
       // Store auth token
       let authToken = localStorage.getItem("token");
-    
+
       async function getAuthToken() {
         // If using OAuth (no token in storage)
         if (!authToken) {
@@ -518,7 +558,7 @@
               },
               credentials: "include", // Important to include cookies
             });
-    
+
             if (checkResponse.ok) {
               const data = await checkResponse.json();
               if (data.isAuthenticated) {
@@ -532,45 +572,45 @@
         }
         return authToken;
       }
-    
+
       function openCreatePostModal() {
         document.getElementById("createPostModal").style.display = "block";
       }
-    
+
       function closeCreatePostModal() {
         document.getElementById("createPostModal").style.display = "none";
       }
-    
+
       // Update createPost function
       async function createPost(event) {
         event.preventDefault();
         const form = event.target;
         const formData = new FormData(form);
-    
+
         try {
           const token = await getAuthToken();
-    
+
           // Setup headers
           const headers = {
             "Content-Type": "application/json",
             "X-CSRFToken": getCookie("csrftoken"),
           };
-    
+
           if (token) {
             headers["Authorization"] = `Token ${token}`;
           }
-    
+
           const response = await fetch("/posts/", {
             method: "POST",
             headers: headers,
-            credentials: 'include',
+            credentials: "include",
             body: JSON.stringify({
               title: formData.get("title"),
               content: formData.get("content"),
               post_type: formData.get("post_type"),
             }),
           });
-    
+
           if (response.ok) {
             window.location.reload();
           } else {
@@ -580,7 +620,7 @@
           console.error("Error:", error);
         }
       }
-    
+
       function getCookie(name) {
         let cookieValue = null;
         if (document.cookie && document.cookie !== "") {
@@ -595,7 +635,7 @@
         }
         return cookieValue;
       }
-    
+
       // Update likePost function
       async function likePost(postId) {
         try {
@@ -604,30 +644,30 @@
           const likesCountEl = document.getElementById(`likes-count-${postId}`);
           const isCurrentlyLiked = likeBtn.classList.contains("liked");
           const currentCount = parseInt(likesCountEl.textContent.trim().match(/\d+/) || "0");
-    
+
           // Make the API request first (don't update UI optimistically)
           const token = await getAuthToken();
-    
+
           // Setup headers - include token only if available
           const headers = {
             "Content-Type": "application/json",
             "X-CSRFToken": getCookie("csrftoken"),
           };
-    
+
           if (token) {
             headers["Authorization"] = `Token ${token}`;
           }
-    
+
           const response = await fetch(`/${postId}/like/`, {
             method: "POST",
             headers: headers,
             credentials: "include", // Include cookies for session authentication
             body: JSON.stringify({ post_id: postId }),
           });
-    
+
           if (response.ok) {
             const data = await response.json();
-    
+
             // Update UI based on the server's response
             if (data.liked) {
               // Post is liked
@@ -638,7 +678,7 @@
               likeBtn.classList.remove("liked");
               likeBtn.innerHTML = '<i class="far fa-thumbs-up"></i> Like';
             }
-    
+
             // Update the like count
             likesCountEl.innerHTML = `<i class="fas fa-thumbs-up"></i> ${data.likes_count}`;
           } else {
@@ -649,7 +689,7 @@
           console.error("Error:", error);
         }
       }
-    
+
       function toggleComments(postId) {
         const commentsSection = document.getElementById(`comments-section-${postId}`);
         if (commentsSection.style.display === "block") {
@@ -658,63 +698,62 @@
           commentsSection.style.display = "block";
         }
       }
-    
+
       let commentToDelete = null;
       let postIdForDelete = null;
-    
+
       function showDeleteModal(commentId, postId) {
         commentToDelete = commentId;
         postIdForDelete = postId;
         document.getElementById("deleteCommentModal").style.display = "block";
-    
+
         // Add event listener to confirm button
         document.getElementById("confirmDeleteComment").onclick = function () {
           deleteComment(commentId, postId);
         };
       }
-    
+
       function closeDeleteCommentModal() {
         document.getElementById("deleteCommentModal").style.display = "none";
         commentToDelete = null;
         postIdForDelete = null;
       }
-    
-      // Update deleteComment function
+
       async function deleteComment(commentId, postId) {
         try {
           const token = await getAuthToken();
-    
+
           // Setup headers
           const headers = {
             "Content-Type": "application/json",
             "X-CSRFToken": getCookie("csrftoken"),
           };
-    
+
           if (token) {
             headers["Authorization"] = `Token ${token}`;
           }
-    
+
           const response = await fetch(`/${postId}/comment/`, {
             method: "DELETE",
             headers: headers,
-            credentials: 'include',
+            credentials: "include",
             body: JSON.stringify({
               id: commentId,
             }),
           });
-    
+
           if (response.ok) {
             // Remove comment from UI
             const commentElement = document.getElementById(`comment-${commentId}`);
             if (commentElement) {
               commentElement.remove();
             }
-    
+
             // Update comment count
             const commentsCountEl = document.getElementById(`comments-count-${postId}`);
             const currentCount = parseInt(commentsCountEl.textContent.match(/\d+/) || "0");
             commentsCountEl.textContent = `${Math.max(0, currentCount - 1)} comments`;
-    
+
             closeDeleteCommentModal();
           } else {
             console.error("Error deleting comment:", await response.text());
@@ -725,108 +764,111 @@
           alert("An error occurred while deleting the comment.");
         }
       }
-    
+
       async function addComment(postId) {
         const commentInput = document.getElementById(`comment-input-${postId}`);
         const commentText = commentInput.value.trim();
-      
+    
         if (!commentText) return;
-      
+    
         try {
-          const token = await getAuthToken();
-      
-          // Setup headers
-          const headers = {
-            "Content-Type": "application/json",
-            "X-CSRFToken": getCookie("csrftoken"),
-          };
-      
-          if (token) {
-            headers["Authorization"] = `Token ${token}`;
-          }
-      
-          const response = await fetch(`/${postId}/comment/`, {
-            method: "POST",
-            headers: headers,
-            credentials: 'include',
-            body: JSON.stringify({
-              text: commentText,
-            }),
-          });
-      
-          if (response.ok) {
-            const data = await response.json();
-            console.log("Comment response:", data); // Keep for debugging
-      
-            // Update comment count immediately
-            const commentsCountEl = document.getElementById(`comments-count-${postId}`);
-            let newCount;
-            
-            if (data.comments_count !== undefined) {
-              newCount = data.comments_count;
-            } else {
-              const currentCount = parseInt(commentsCountEl.textContent.match(/\d+/) || "0");
-              newCount = currentCount + 1;
+            const token = await getAuthToken();
+    
+            // Setup headers
+            const headers = {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCookie("csrftoken"),
+            };
+    
+            if (token) {
+                headers["Authorization"] = `Token ${token}`;
             }
-            
-            commentsCountEl.textContent = `${newCount} comments`;
-      
-            // Make sure comments section is visible
-            const commentsSection = document.getElementById(`comments-section-${postId}`);
-            commentsSection.style.display = "block";
-            
-            // Add new comment to the list
-            const commentsList = document.getElementById(`comments-list-${postId}`);
-            const newComment = document.createElement("div");
-            newComment.className = "comment";
-            
-            // Use data.id or data.comment_id (handle different API response formats)
-            const commentId = data.comment_id || data.id || `temp-${Date.now()}`;
-            newComment.id = `comment-${commentId}`;
-            
-            // Get the current user's profile picture from the comment form
-            // This ensures we always have a valid picture URL
-            const currentUserPic = document.querySelector(`#comments-section-${postId} .comment-form .comment-author-pic`).src;
-            
-            // Use multiple fallbacks for profile picture
-            const profilePic = data.author_profile_picture_url || 
-                               data.profile_picture_url || 
-                               (data.author && data.author.profile_picture) || 
-                               currentUserPic || 
-                               '/media/profile_pictures/default.png';
-            
-            const username = data.author_username || 
-                            (data.author && data.author.username) || 
-                            'You';
-            
-            newComment.innerHTML = `
-              <img src="${profilePic}" alt="Profile" class="comment-author-pic">
-              <div class="comment-bubble">
-                <div class="comment-author">${username}</div>
-                <div class="comment-text">${commentText}</div>
-              </div>
-              <button class="delete-comment-btn" onclick="showDeleteModal('${commentId}', '${postId}')">
-                <i class="fas fa-trash"></i>
-              </button>
-            `;
-            
-            commentsList.appendChild(newComment);
-            
-            // Scroll to the new comment
-            newComment.scrollIntoView({ behavior: "smooth", block: "end" });
-      
-            // Clear input
-            commentInput.value = "";
-          } else {
-            const errorText = await response.text();
-            console.error("Error adding comment:", errorText);
-            alert("Failed to add comment: " + (errorText || "Unknown error"));
-          }
+    
+            const response = await fetch(`/${postId}/comment/`, {
+                method: "POST",
+                headers: headers,
+                credentials: 'include',
+                body: JSON.stringify({
+                    text: commentText,
+                }),
+            });
+    
+            if (response.ok) {
+                const data = await response.json();
+                console.log("Comment response:", data); // Keep for debugging
+    
+                // Ensure the response contains the comment ID
+                const commentId = data.comment_id || data.id;
+                if (!commentId) {
+                    throw new Error("Comment ID is missing in the response");
+                }
+    
+                // Update comment count immediately
+                const commentsCountEl = document.getElementById(`comments-count-${postId}`);
+                let newCount;
+    
+                if (data.comments_count !== undefined) {
+                    newCount = data.comments_count;
+                } else {
+                    const currentCount = parseInt(commentsCountEl.textContent.match(/\d+/) || "0");
+                    newCount = currentCount + 1;
+                }
+    
+                commentsCountEl.textContent = `${newCount} comments`;
+    
+                // Make sure comments section is visible
+                const commentsSection = document.getElementById(`comments-section-${postId}`);
+                commentsSection.style.display = "block";
+    
+                // Add new comment to the list
+                const commentsList = document.getElementById(`comments-list-${postId}`);
+                const newComment = document.createElement("div");
+                newComment.className = "comment";
+                newComment.id = `comment-${commentId}`;
+    
+                // Get the current user's profile picture from the comment form
+                // This ensures we always have a valid picture URL
+                const currentUserPic = document.querySelector(`#comments-section-${postId} .comment-form .comment-author-pic`).src;
+    
+                // Use multiple fallbacks for profile picture
+                const profilePic = data.author_profile_picture_url || 
+                                   data.profile_picture_url || 
+                                   (data.author && data.author.profile_picture) || 
+                                   currentUserPic || 
+                                   '/media/profile_pictures/default.png';
+    
+                const username = data.author_username || 
+                                (data.author && data.author.username) || 
+                                'You';
+    
+                newComment.innerHTML = `
+                  <img src="${profilePic}" alt="Profile" class="comment-author-pic">
+                  <div class="comment-bubble">
+                    <div class="comment-author">${username}</div>
+                    <div class="comment-text">${commentText}</div>
+                  </div>
+                  <button class="delete-comment-btn" onclick="showDeleteModal('${commentId}', '${postId}')">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                `;
+    
+                commentsList.appendChild(newComment);
+    
+                // Scroll to the new comment
+                newComment.scrollIntoView({ behavior: "smooth", block: "end" });
+    
+                // Clear input
+                commentInput.value = "";
+            } else {
+                const errorText = await response.text();
+                console.error("Error adding comment:", errorText);
+                alert("Failed to add comment: " + (errorText || "Unknown error"));
+            }
         } catch (error) {
-          console.error("Error:", error);
-          alert("An error occurred while adding your comment");
+            console.error("Error:", error);
+            alert("An error occurred while adding your comment");
         }
-      }
+    }
     </script>
   </body>
 </html>
