@@ -516,11 +516,6 @@
             {% csrf_token %}
             <input type="text" name="title" placeholder="Post Title" required />
             <textarea name="content" placeholder="What's on your mind?" rows="4" required></textarea>
-            <select name="post_type" required>
-              <option value="text">Text</option>
-              <option value="image">Image</option>
-              <option value="video">Video</option>
-            </select>
             <button type="submit">Post</button>
           </form>
         </div>
@@ -607,7 +602,7 @@
             body: JSON.stringify({
               title: formData.get("title"),
               content: formData.get("content"),
-              post_type: formData.get("post_type"),
+              post_type: "text",
             }),
           });
 
