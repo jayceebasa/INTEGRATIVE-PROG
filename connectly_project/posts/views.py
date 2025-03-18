@@ -227,7 +227,7 @@ class CreatePostView(APIView):
         if request.user.is_admin_user():
             posts = Post.objects.all()
         else:
-            posts = Post.objects.filter(author=request.user)
+            posts = Post.objects.filter(author=request.user) | Post.objects.filter(is_private=False)
         
         post_data = []
         for post in posts:
@@ -248,9 +248,9 @@ class CreatePostView(APIView):
         
         return Response(post_data)
       
-    def put(self, request):
+    def put(self, request, id):
         try:
-            post = Post.objects.get(id=request.data['id'])
+            post = Post.objects.get(id=id)
         except Post.DoesNotExist:
             return Response({"error": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
         
@@ -263,9 +263,9 @@ class CreatePostView(APIView):
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
       
-    def delete(self, request):
+    def delete(self, request, id):
         try:
-            post = Post.objects.get(id=request.data['id'])
+            post = Post.objects.get(id=id)
         except Post.DoesNotExist:
             return Response({"error": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
         
@@ -397,3 +397,15 @@ class PostDetailView(APIView):
         
         self.check_object_permissions(request, post)
         return Response({"content": post.content})
+      
+    def delete(self, request, id):
+        try:
+            post = Post.objects.get(id=id)
+        except Post.DoesNotExist:
+            return Response({"error": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        if request.user != post.author and not request.user.is_admin_user():
+            return Response({"error": "You do not have permission to delete this post."}, status=status.HTTP_403_FORBIDDEN)
+
+        post.delete()
+        return Response({"message": "Post deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
