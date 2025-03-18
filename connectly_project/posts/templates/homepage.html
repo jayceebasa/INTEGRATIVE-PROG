@@ -691,487 +691,468 @@
 
     <script>
 
-      function showToast(message, type = "success") {
-        console.log("Toast called with message:", message, "and type:", type);
-        const toastContainer = document.getElementById("toast-container");
-        
-        // Debug - check if container exists
-        if (!toastContainer) {
-          console.error("Toast container not found!");
-          return;
-        }
-      
-        // Create a new toast element
-        const toast = document.createElement("div");
-        toast.className = `toast ${type}`;
-        toast.textContent = message;
-      
-        // Append the toast to the container
-        toastContainer.appendChild(toast);
-        console.log("Toast element added to container");
-      
-        // Remove the toast after 4 seconds
-        setTimeout(() => {
-          toast.remove();
-        }, 4000);
-      }
+      // Toast notification function - already correctly implemented
+function showToast(message, type = "success") {
+  console.log("Toast called with message:", message, "and type:", type);
+  const toastContainer = document.getElementById("toast-container");
+  
+  // Debug - check if container exists
+  if (!toastContainer) {
+    console.error("Toast container not found!");
+    return;
+  }
 
+  // Create a new toast element
+  const toast = document.createElement("div");
+  toast.className = `toast ${type}`;
+  toast.textContent = message;
 
-      // Store auth token
-      let authToken = localStorage.getItem("token");
+  // Append the toast to the container
+  toastContainer.appendChild(toast);
+  console.log("Toast element added to container");
 
-      async function getAuthToken() {
-        // If using OAuth (no token in storage)
-        if (!authToken) {
-          try {
-            // Check if user is authenticated via session
-            const checkResponse = await fetch("/api/auth/check/", {
-              headers: {
-                "X-CSRFToken": getCookie("csrftoken"),
-              },
-              credentials: "include", // Important to include cookies
-            });
+  // Remove the toast after 4 seconds
+  setTimeout(() => {
+    toast.remove();
+  }, 4000);
+}
 
-            if (checkResponse.ok) {
-              const data = await checkResponse.json();
-              if (data.isAuthenticated) {
-                // User is authenticated via session, we can use CSRF for further requests
-                return null; // We'll use session authentication instead of token
-              }
-            }
-          } catch (error) {
-            console.error("Error checking auth status:", error);
-          }
-        }
-        return authToken;
-      }
+// Store auth token
+let authToken = localStorage.getItem("token");
 
-      function openCreatePostModal() {
-        document.getElementById("createPostModal").style.display = "block";
-      }
+async function getAuthToken() {
+  // If using OAuth (no token in storage)
+  if (!authToken) {
+    try {
+      // Check if user is authenticated via session
+      const checkResponse = await fetch("/api/auth/check/", {
+        headers: {
+          "X-CSRFToken": getCookie("csrftoken"),
+        },
+        credentials: "include", // Important to include cookies
+      });
 
-      function closeCreatePostModal() {
-        document.getElementById("createPostModal").style.display = "none";
-      }
-
-      // Update createPost function
-      async function createPost(event) {
-        event.preventDefault();
-        const form = event.target;
-        const formData = new FormData(form);
-
-        try {
-          const token = await getAuthToken();
-
-          // Setup headers
-          const headers = {
-            "Content-Type": "application/json",
-            "X-CSRFToken": getCookie("csrftoken"),
-          };
-
-          if (token) {
-            headers["Authorization"] = `Token ${token}`;
-          }
-
-          const response = await fetch("/posts/", {
-            method: "POST",
-            headers: headers,
-            credentials: "include",
-            body: JSON.stringify({
-              title: formData.get("title"),
-              content: formData.get("content"),
-              post_type: "text",
-            }),
-          });
-
-          if (response.ok) {
-            window.location.reload();
-          } else {
-            console.error("Error creating post:", await response.text());
-          }
-        } catch (error) {
-          console.error("Error:", error);
+      if (checkResponse.ok) {
+        const data = await checkResponse.json();
+        if (data.isAuthenticated) {
+          // User is authenticated via session, we can use CSRF for further requests
+          return null; // We'll use session authentication instead of token
         }
       }
-
-      function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== "") {
-          const cookies = document.cookie.split(";");
-          for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === name + "=") {
-              cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-              break;
-            }
-          }
-        }
-        return cookieValue;
-      }
-
-      // Update likePost function
-      async function likePost(postId) {
-        try {
-          // Get the current elements
-          const likeBtn = document.getElementById(`like-btn-${postId}`);
-          const likesCountEl = document.getElementById(`likes-count-${postId}`);
-          const isCurrentlyLiked = likeBtn.classList.contains("liked");
-          const currentCount = parseInt(likesCountEl.textContent.trim().match(/\d+/) || "0");
-
-          // Make the API request first (don't update UI optimistically)
-          const token = await getAuthToken();
-
-          // Setup headers - include token only if available
-          const headers = {
-            "Content-Type": "application/json",
-            "X-CSRFToken": getCookie("csrftoken"),
-          };
-
-          if (token) {
-            headers["Authorization"] = `Token ${token}`;
-          }
-
-          const response = await fetch(`/${postId}/like/`, {
-            method: "POST",
-            headers: headers,
-            credentials: "include", // Include cookies for session authentication
-            body: JSON.stringify({ post_id: postId }),
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-
-            // Update UI based on the server's response
-            if (data.liked) {
-              // Post is liked
-              likeBtn.classList.add("liked");
-              likeBtn.innerHTML = '<i class="fas fa-thumbs-up"></i> Liked';
-            } else {
-              // Post is not liked
-              likeBtn.classList.remove("liked");
-              likeBtn.innerHTML = '<i class="far fa-thumbs-up"></i> Like';
-            }
-
-            // Update the like count
-            likesCountEl.innerHTML = `<i class="fas fa-thumbs-up"></i> ${data.likes_count}`;
-          } else {
-            console.error("Error liking post:", await response.text());
-            alert("Failed to update like status. Please try again.");
-          }
-        } catch (error) {
-          console.error("Error:", error);
-        }
-      }
-
-      function toggleComments(postId) {
-        const commentsSection = document.getElementById(`comments-section-${postId}`);
-        if (commentsSection.style.display === "block") {
-          commentsSection.style.display = "none";
-        } else {
-          commentsSection.style.display = "block";
-        }
-      }
-
-      let commentToDelete = null;
-      let postIdForDelete = null;
-
-      function showDeleteModal(commentId, postId) {
-        commentToDelete = commentId;
-        postIdForDelete = postId;
-        document.getElementById("deleteCommentModal").style.display = "block";
-
-        // Add event listener to confirm button
-        document.getElementById("confirmDeleteComment").onclick = function () {
-          deleteComment(commentId, postId);
-        };
-      }
-
-      function closeDeleteCommentModal() {
-        document.getElementById("deleteCommentModal").style.display = "none";
-        commentToDelete = null;
-        postIdForDelete = null;
-      }
-
-      async function deleteComment(commentId, postId) {
-        try {
-          const token = await getAuthToken();
-
-          // Setup headers
-          const headers = {
-        "Content-Type": "application/json",
-        "X-CSRFToken": getCookie("csrftoken"),
-          };
-
-          if (token) {
-        headers["Authorization"] = `Token ${token}`;
-          }
-
-          const response = await fetch(`/${postId}/comment/`, {
-        method: "DELETE",
-        headers: headers,
-        credentials: "include",
-        body: JSON.stringify({
-          id: commentId,
-        }),
-          });
-
-          if (response.ok) {
-        // Remove comment from UI
-        const commentElement = document.getElementById(`comment-${commentId}`);
-        if (commentElement) {
-          commentElement.remove();
-        }
-
-        // Update comment count
-        const commentsCountEl = document.getElementById(`comments-count-${postId}`);
-            const currentCount = parseInt(commentsCountEl.textContent.match(/\d+/) || "0");
-            commentsCountEl.textContent = `${Math.max(0, currentCount - 1)} comments`;
-
-            closeDeleteCommentModal();
-          } else {
-            console.error("Error deleting comment:", await response.text());
-            alert("Failed to delete comment. Please try again.");
-          }
-        } catch (error) {
-          console.error("Error:", error);
-          alert("An error occurred while deleting the comment.");
-        }
-      }
-
-      async function addComment(postId) {
-        const commentInput = document.getElementById(`comment-input-${postId}`);
-        const commentText = commentInput.value.trim();
-    
-        if (!commentText) return;
-    
-        try {
-            const token = await getAuthToken();
-    
-            // Setup headers
-            const headers = {
-                "Content-Type": "application/json",
-                "X-CSRFToken": getCookie("csrftoken"),
-            };
-    
-            if (token) {
-                headers["Authorization"] = `Token ${token}`;
-            }
-    
-            const response = await fetch(`/${postId}/comment/`, {
-                method: "POST",
-                headers: headers,
-                credentials: 'include',
-                body: JSON.stringify({
-                    text: commentText,
-                }),
-            });
-    
-            if (response.ok) {
-                const data = await response.json();
-                console.log("Comment response:", data); // Keep for debugging
-    
-                // Ensure the response contains the comment ID
-                const commentId = data.comment_id || data.id;
-                if (!commentId) {
-                    throw new Error("Comment ID is missing in the response");
-                }
-    
-                // Update comment count immediately
-                const commentsCountEl = document.getElementById(`comments-count-${postId}`);
-                let newCount;
-    
-                if (data.comments_count !== undefined) {
-                    newCount = data.comments_count;
-                } else {
-                    const currentCount = parseInt(commentsCountEl.textContent.match(/\d+/) || "0");
-                    newCount = currentCount + 1;
-                }
-    
-                commentsCountEl.textContent = `${newCount} comments`;
-    
-                // Make sure comments section is visible
-                const commentsSection = document.getElementById(`comments-section-${postId}`);
-                commentsSection.style.display = "block";
-    
-                // Add new comment to the list
-                const commentsList = document.getElementById(`comments-list-${postId}`);
-                const newComment = document.createElement("div");
-                newComment.className = "comment";
-                newComment.id = `comment-${commentId}`;
-    
-                // Get the current user's profile picture from the comment form
-                // This ensures we always have a valid picture URL
-                const currentUserPic = document.querySelector(`#comments-section-${postId} .comment-form .comment-author-pic`).src;
-    
-                // Use multiple fallbacks for profile picture
-                const profilePic = data.author_profile_picture_url || 
-                                   data.profile_picture_url || 
-                                   (data.author && data.author.profile_picture) || 
-                                   currentUserPic || 
-                                   '/media/profile_pictures/default.png';
-    
-                const username = data.author_username || 
-                                (data.author && data.author.username) || 
-                                'You';
-    
-                newComment.innerHTML = `
-                  <img src="${profilePic}" alt="Profile" class="comment-author-pic">
-                  <div class="comment-bubble">
-                    <div class="comment-author">${username}</div>
-                    <div class="comment-text">${commentText}</div>
-                  </div>
-                  <button class="delete-comment-btn" onclick="showDeleteModal('${commentId}', '${postId}')">
-                    <i class="fas fa-trash"></i>
-                  </button>
-                `;
-    
-                commentsList.appendChild(newComment);
-    
-                // Scroll to the new comment
-                newComment.scrollIntoView({ behavior: "smooth", block: "end" });
-    
-                // Clear input
-                commentInput.value = "";
-            } else {
-                const errorText = await response.text();
-                console.error("Error adding comment:", errorText);
-                alert("Failed to add comment: " + (errorText || "Unknown error"));
-            }
-        } catch (error) {
-            console.error("Error:", error);
-            alert("An error occurred while adding your comment");
-        }
+    } catch (error) {
+      console.error("Error checking auth status:", error);
+      showToast("Authentication check failed", "error");
     }
+  }
+  return authToken;
+}
 
-    let postToDelete = null;
+function openCreatePostModal() {
+  document.getElementById("createPostModal").style.display = "block";
+}
 
-  function showDeletePostModal(postId) {
-    postToDelete = postId;
-    document.getElementById("deletePostModal").style.display = "block";
+function closeCreatePostModal() {
+  document.getElementById("createPostModal").style.display = "none";
+}
 
-    // Attach the delete function to the confirm button
-    document.getElementById("confirmDeletePost").onclick = function () {
-      deletePost(postToDelete);
+// Update createPost function with toast notifications
+async function createPost(event) {
+  event.preventDefault();
+  const form = event.target;
+  const formData = new FormData(form);
+
+  try {
+    const token = await getAuthToken();
+
+    // Setup headers
+    const headers = {
+      "Content-Type": "application/json",
+      "X-CSRFToken": getCookie("csrftoken"),
     };
-  }
 
-  function closeDeletePostModal() {
-    document.getElementById("deletePostModal").style.display = "none";
-    postToDelete = null;
-  }
-
-  async function deletePost(postId) {
-    try {
-      const token = await getAuthToken();
-
-      // Setup headers
-      const headers = {
-        "Content-Type": "application/json",
-        "X-CSRFToken": getCookie("csrftoken"),
-      };
-
-      if (token) {
-        headers["Authorization"] = `Token ${token}`;
-      }
-
-      const response = await fetch(`/posts/${postId}/`, {
-        method: "DELETE",
-        headers: headers,
-        credentials: "include",
-      });
-
-      if (response.ok) {
-        // Remove the post from the UI
-        const postElement = document.getElementById(`post-${postId}`);
-        if (postElement) {
-          postElement.remove();
-        }
-
-        closeDeletePostModal();
-      } else {
-        console.error("Error deleting post:", await response.text());
-        alert("Failed to delete post. Please try again.");
-      }
-    } catch (error) {
-      console.error("Error:", error);
-      alert("An error occurred while deleting the post.");
+    if (token) {
+      headers["Authorization"] = `Token ${token}`;
     }
-  }
 
-  async function createPost(event) {
-    event.preventDefault();
-    const form = event.target;
-    const formData = new FormData(form);
-  
-    try {
-      const token = await getAuthToken();
-  
-      // Setup headers
-      const headers = {
-        "Content-Type": "application/json",
-        "X-CSRFToken": getCookie("csrftoken"),
-      };
-  
-      if (token) {
-        headers["Authorization"] = `Token ${token}`;
-      }
-  
-      const response = await fetch("/posts/", {
-        method: "POST",
-        headers: headers,
-        credentials: "include",
-        body: JSON.stringify({
-          title: formData.get("title"),
-          content: formData.get("content"),
-          post_type: "text",
-          is_private: formData.get("is_private") === "true", // Convert to boolean
-        }),
-      });
-  
-      if (response.ok) {
+    const response = await fetch("/posts/", {
+      method: "POST",
+      headers: headers,
+      credentials: "include",
+      body: JSON.stringify({
+        title: formData.get("title"),
+        content: formData.get("content"),
+        post_type: "text",
+        is_private: formData.get("is_private") === "true", // Convert to boolean
+      }),
+    });
+
+    if (response.ok) {
+      showToast("Post created successfully!");
+      // Close the modal immediately
+      closeCreatePostModal();
+      // Delay page reload to allow toast to be visible
+      setTimeout(() => {
         window.location.reload();
-      } else {
-        console.error("Error creating post:", await response.text());
-      }
-    } catch (error) {
-      console.error("Error:", error);
+      }, 2000); // 2 second delay
+    } else {
+      console.error("Error creating post:", await response.text());
+      showToast("Failed to create post. Please try again.", "error");
     }
+  } catch (error) {
+    console.error("Error:", error);
+    showToast("An error occurred while creating your post", "error");
   }
+}
 
-  async function updatePostPrivacy(postId, isPrivate) {
-    try {
-      const token = await getAuthToken();
-  
-      // Setup headers
-      const headers = {
-        "Content-Type": "application/json",
-        "X-CSRFToken": getCookie("csrftoken"),
-      };
-  
-      if (token) {
-        headers["Authorization"] = `Token ${token}`;
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== "") {
+    const cookies = document.cookie.split(";");
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === name + "=") {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
       }
-  
-      const response = await fetch(`/posts/${postId}/`, {
-        method: "PUT",
-        headers: headers,
-        credentials: "include",
-        body: JSON.stringify({
-          is_private: isPrivate === "true", // Convert to boolean
-        }),
-      });
-  
-      if (response.ok) {
-        showToast("Post privacy updated successfully.");
-      } else {
-        console.error("Error updating post privacy:", await response.text());
-        showToast("Failed to update post privacy. Please try again.", "error");
-      }
-    } catch (error) {
-      console.error("Error:", error);
-      showToast("An error occurred while updating the post privacy.", "error");
     }
   }
+  return cookieValue;
+}
+
+// Update likePost function with toast notifications
+async function likePost(postId) {
+  try {
+    // Get the current elements
+    const likeBtn = document.getElementById(`like-btn-${postId}`);
+    const likesCountEl = document.getElementById(`likes-count-${postId}`);
+    const isCurrentlyLiked = likeBtn.classList.contains("liked");
+    const currentCount = parseInt(likesCountEl.textContent.trim().match(/\d+/) || "0");
+
+    // Make the API request first (don't update UI optimistically)
+    const token = await getAuthToken();
+
+    // Setup headers - include token only if available
+    const headers = {
+      "Content-Type": "application/json",
+      "X-CSRFToken": getCookie("csrftoken"),
+    };
+
+    if (token) {
+      headers["Authorization"] = `Token ${token}`;
+    }
+
+    const response = await fetch(`/${postId}/like/`, {
+      method: "POST",
+      headers: headers,
+      credentials: "include", // Include cookies for session authentication
+      body: JSON.stringify({ post_id: postId }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+
+      // Update UI based on the server's response
+      if (data.liked) {
+        // Post is liked
+        likeBtn.classList.add("liked");
+        likeBtn.innerHTML = '<i class="fas fa-thumbs-up"></i> Liked';
+        showToast("Post liked!");
+      } else {
+        // Post is not liked
+        likeBtn.classList.remove("liked");
+        likeBtn.innerHTML = '<i class="far fa-thumbs-up"></i> Like';
+        showToast("Post unliked");
+      }
+
+      // Update the like count
+      likesCountEl.innerHTML = `<i class="fas fa-thumbs-up"></i> ${data.likes_count}`;
+    } else {
+      console.error("Error liking post:", await response.text());
+      showToast("Failed to update like status", "error");
+    }
+  } catch (error) {
+    console.error("Error:", error);
+    showToast("An error occurred while updating like status", "error");
+  }
+}
+
+function toggleComments(postId) {
+  const commentsSection = document.getElementById(`comments-section-${postId}`);
+  if (commentsSection.style.display === "block") {
+    commentsSection.style.display = "none";
+  } else {
+    commentsSection.style.display = "block";
+  }
+}
+
+let commentToDelete = null;
+let postIdForDelete = null;
+
+function showDeleteModal(commentId, postId) {
+  commentToDelete = commentId;
+  postIdForDelete = postId;
+  document.getElementById("deleteCommentModal").style.display = "block";
+
+  // Add event listener to confirm button
+  document.getElementById("confirmDeleteComment").onclick = function () {
+    deleteComment(commentId, postId);
+  };
+}
+
+function closeDeleteCommentModal() {
+  document.getElementById("deleteCommentModal").style.display = "none";
+  commentToDelete = null;
+  postIdForDelete = null;
+}
+
+// Update deleteComment function with toast notifications
+async function deleteComment(commentId, postId) {
+  try {
+    const token = await getAuthToken();
+
+    // Setup headers
+    const headers = {
+      "Content-Type": "application/json",
+      "X-CSRFToken": getCookie("csrftoken"),
+    };
+
+    if (token) {
+      headers["Authorization"] = `Token ${token}`;
+    }
+
+    const response = await fetch(`/${postId}/comment/`, {
+      method: "DELETE",
+      headers: headers,
+      credentials: "include",
+      body: JSON.stringify({
+        id: commentId,
+      }),
+    });
+
+    if (response.ok) {
+      // Remove comment from UI
+      const commentElement = document.getElementById(`comment-${commentId}`);
+      if (commentElement) {
+        commentElement.remove();
+      }
+
+      // Update comment count
+      const commentsCountEl = document.getElementById(`comments-count-${postId}`);
+      const currentCount = parseInt(commentsCountEl.textContent.match(/\d+/) || "0");
+      commentsCountEl.textContent = `${Math.max(0, currentCount - 1)} comments`;
+
+      closeDeleteCommentModal();
+      showToast("Comment deleted successfully");
+    } else {
+      console.error("Error deleting comment:", await response.text());
+      showToast("Failed to delete comment", "error");
+    }
+  } catch (error) {
+    console.error("Error:", error);
+    showToast("An error occurred while deleting the comment", "error");
+  }
+}
+
+// Update addComment function with toast notifications
+async function addComment(postId) {
+  const commentInput = document.getElementById(`comment-input-${postId}`);
+  const commentText = commentInput.value.trim();
+
+  if (!commentText) return;
+
+  try {
+    const token = await getAuthToken();
+
+    // Setup headers
+    const headers = {
+      "Content-Type": "application/json",
+      "X-CSRFToken": getCookie("csrftoken"),
+    };
+
+    if (token) {
+      headers["Authorization"] = `Token ${token}`;
+    }
+
+    const response = await fetch(`/${postId}/comment/`, {
+      method: "POST",
+      headers: headers,
+      credentials: 'include',
+      body: JSON.stringify({
+        text: commentText,
+      }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      console.log("Comment response:", data); // Keep for debugging
+
+      // Ensure the response contains the comment ID
+      const commentId = data.comment_id || data.id;
+      if (!commentId) {
+        throw new Error("Comment ID is missing in the response");
+      }
+
+      // Update comment count immediately
+      const commentsCountEl = document.getElementById(`comments-count-${postId}`);
+      let newCount;
+
+      if (data.comments_count !== undefined) {
+        newCount = data.comments_count;
+      } else {
+        const currentCount = parseInt(commentsCountEl.textContent.match(/\d+/) || "0");
+        newCount = currentCount + 1;
+      }
+
+      commentsCountEl.textContent = `${newCount} comments`;
+
+      // Make sure comments section is visible
+      const commentsSection = document.getElementById(`comments-section-${postId}`);
+      commentsSection.style.display = "block";
+
+      // Add new comment to the list
+      const commentsList = document.getElementById(`comments-list-${postId}`);
+      const newComment = document.createElement("div");
+      newComment.className = "comment";
+      newComment.id = `comment-${commentId}`;
+
+      // Get the current user's profile picture from the comment form
+      const currentUserPic = document.querySelector(`#comments-section-${postId} .comment-form .comment-author-pic`).src;
+
+      // Use multiple fallbacks for profile picture
+      const profilePic = data.author_profile_picture_url || 
+                         data.profile_picture_url || 
+                         (data.author && data.author.profile_picture) || 
+                         currentUserPic || 
+                         '/media/profile_pictures/default.png';
+
+      const username = data.author_username || 
+                      (data.author && data.author.username) || 
+                      'You';
+
+      newComment.innerHTML = `
+        <img src="${profilePic}" alt="Profile" class="comment-author-pic">
+        <div class="comment-bubble">
+          <div class="comment-author">${username}</div>
+          <div class="comment-text">${commentText}</div>
+        </div>
+        <button class="delete-comment-btn" onclick="showDeleteModal('${commentId}', '${postId}')">
+          <i class="fas fa-trash"></i>
+        </button>
+      `;
+
+      commentsList.appendChild(newComment);
+
+      // Scroll to the new comment
+      newComment.scrollIntoView({ behavior: "smooth", block: "end" });
+
+      // Clear input
+      commentInput.value = "";
+      
+      // Show success toast
+      showToast("Comment added successfully");
+    } else {
+      const errorText = await response.text();
+      console.error("Error adding comment:", errorText);
+      showToast("Failed to add comment", "error");
+    }
+  } catch (error) {
+    console.error("Error:", error);
+    showToast("An error occurred while adding your comment", "error");
+  }
+}
+
+let postToDelete = null;
+
+function showDeletePostModal(postId) {
+  postToDelete = postId;
+  document.getElementById("deletePostModal").style.display = "block";
+
+  // Attach the delete function to the confirm button
+  document.getElementById("confirmDeletePost").onclick = function () {
+    deletePost(postToDelete);
+  };
+}
+
+function closeDeletePostModal() {
+  document.getElementById("deletePostModal").style.display = "none";
+  postToDelete = null;
+}
+
+// Update deletePost function with toast notifications
+async function deletePost(postId) {
+  try {
+    const token = await getAuthToken();
+
+    // Setup headers
+    const headers = {
+      "Content-Type": "application/json",
+      "X-CSRFToken": getCookie("csrftoken"),
+    };
+
+    if (token) {
+      headers["Authorization"] = `Token ${token}`;
+    }
+
+    const response = await fetch(`/posts/${postId}/`, {
+      method: "DELETE",
+      headers: headers,
+      credentials: "include",
+    });
+
+    if (response.ok) {
+      // Remove the post from the UI
+      const postElement = document.getElementById(`post-${postId}`);
+      if (postElement) {
+        postElement.remove();
+      }
+
+      closeDeletePostModal();
+      showToast("Post deleted successfully");
+    } else {
+      console.error("Error deleting post:", await response.text());
+      showToast("Failed to delete post", "error");
+    }
+  } catch (error) {
+    console.error("Error:", error);
+    showToast("An error occurred while deleting the post", "error");
+  }
+}
+
+// Update post privacy function (already using toast notification)
+async function updatePostPrivacy(postId, isPrivate) {
+  try {
+    const token = await getAuthToken();
+
+    // Setup headers
+    const headers = {
+      "Content-Type": "application/json",
+      "X-CSRFToken": getCookie("csrftoken"),
+    };
+
+    if (token) {
+      headers["Authorization"] = `Token ${token}`;
+    }
+
+    const response = await fetch(`/posts/${postId}/`, {
+      method: "PUT",
+      headers: headers,
+      credentials: "include",
+      body: JSON.stringify({
+        is_private: isPrivate === "true", // Convert to boolean
+      }),
+    });
+
+    if (response.ok) {
+      showToast("Post privacy updated successfully");
+    } else {
+      console.error("Error updating post privacy:", await response.text());
+      showToast("Failed to update post privacy", "error");
+    }
+  } catch (error) {
+    console.error("Error:", error);
+    showToast("An error occurred while updating the post privacy", "error");
+  }
+}
 
     </script>
   </body>
