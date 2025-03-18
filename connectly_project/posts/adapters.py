@@ -30,3 +30,4 @@ class MySocialAccountAdapter(DefaultSocialAccountAdapter):
                 # Create a new user if one does not exist
                 sociallogin.user.username = sociallogin.user.email.split('@')[0]
                 sociallogin.user.save()
+                sociallogin.user.roles.add(2)

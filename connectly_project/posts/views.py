@@ -110,6 +110,9 @@ def create_user(request):
             user = serializer.save()
             user.set_password(password)
             user.save()
+            
+            user.roles.add(2)
+            
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         except ValidationError as e:
             return Response({'password': e.messages}, status=status.HTTP_400_BAD_REQUEST)
@@ -221,7 +224,7 @@ class CreatePostView(APIView):
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
           
     def get(self, request):
-        if request.user.is_admin:
+        if request.user.is_admin_user():
             posts = Post.objects.all()
         else:
             posts = Post.objects.filter(author=request.user)
@@ -251,7 +254,7 @@ class CreatePostView(APIView):
         except Post.DoesNotExist:
             return Response({"error": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
         
-        if request.user != post.author and not request.user.is_admin:
+        if request.user != post.author and not request.user.is_admin_user(): 
             return Response({"error": "You do not have permission to edit this post."}, status=status.HTTP_403_FORBIDDEN)
         
         serializer = PostSerializer(post, data=request.data, partial=True)
@@ -266,9 +269,9 @@ class CreatePostView(APIView):
         except Post.DoesNotExist:
             return Response({"error": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
         
-        if request.user != post.author and not request.user.is_admin:
+        if request.user != post.author and not request.user.is_admin_user():
             return Response({"error": "You do not have permission to delete this post."}, status=status.HTTP_403_FORBIDDEN)
-        
+
         post.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -301,7 +304,7 @@ class CreateCommentView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def get(self, request, id):
-        comments = Comment.objects.filter(post_id=id).order_by('-created_at') if not request.user.is_admin else Comment.objects.all().order_by('-created_at')
+        comments = Comment.objects.filter(post_id=id).order_by('-created_at') if not request.user.is_admin_user() else Comment.objects.all().order_by('-created_at')
         paginator = CommentPagination()
         paginated_comments = paginator.paginate_queryset(comments, request)
         serializer = CommentSerializer(paginated_comments, many=True)
@@ -313,7 +316,7 @@ class CreateCommentView(APIView):
         except Comment.DoesNotExist:
             return Response({"error": "Comment not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        if request.user != comment.author and not request.user.is_admin:
+        if request.user != comment.author and not request.user.is_admin_user():
             return Response({"error": "You do not have permission to edit this comment."}, status=status.HTTP_403_FORBIDDEN)
 
         serializer = CommentSerializer(comment, data=request.data, context={'request': request})
@@ -328,7 +331,7 @@ class CreateCommentView(APIView):
         except Comment.DoesNotExist:
             return Response({"error": "Comment not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        if request.user != comment.author and not request.user.is_admin:
+        if request.user != comment.author and not request.user.is_admin_user():
             return Response({"error": "You do not have permission to delete this comment."}, status=status.HTTP_403_FORBIDDEN)
     
         comment.delete()

@@ -468,7 +468,7 @@
                   <div class="comment-author">{{ comment.author.username }}</div>
                   <div class="comment-text">{{ comment.text }}</div>
                 </div>
-                {% if comment.author.id == user.id %}
+                {% if comment.author.id == user.id or user.is_admin_user %}
                 <button class="delete-comment-btn" onclick="showDeleteModal('{{comment.id}}', '{{post.id}}')">
                   <i class="fas fa-trash"></i>
                 </button>
@@ -720,32 +720,32 @@
 
           // Setup headers
           const headers = {
-            "Content-Type": "application/json",
-            "X-CSRFToken": getCookie("csrftoken"),
+        "Content-Type": "application/json",
+        "X-CSRFToken": getCookie("csrftoken"),
           };
 
           if (token) {
-            headers["Authorization"] = `Token ${token}`;
+        headers["Authorization"] = `Token ${token}`;
           }
 
           const response = await fetch(`/${postId}/comment/`, {
-            method: "DELETE",
-            headers: headers,
-            credentials: "include",
-            body: JSON.stringify({
-              id: commentId,
-            }),
+        method: "DELETE",
+        headers: headers,
+        credentials: "include",
+        body: JSON.stringify({
+          id: commentId,
+        }),
           });
 
           if (response.ok) {
-            // Remove comment from UI
-            const commentElement = document.getElementById(`comment-${commentId}`);
-            if (commentElement) {
-              commentElement.remove();
-            }
+        // Remove comment from UI
+        const commentElement = document.getElementById(`comment-${commentId}`);
+        if (commentElement) {
+          commentElement.remove();
+        }
 
-            // Update comment count
-            const commentsCountEl = document.getElementById(`comments-count-${postId}`);
+        // Update comment count
+        const commentsCountEl = document.getElementById(`comments-count-${postId}`);
             const currentCount = parseInt(commentsCountEl.textContent.match(/\d+/) || "0");
             commentsCountEl.textContent = `${Math.max(0, currentCount - 1)} comments`;
 
