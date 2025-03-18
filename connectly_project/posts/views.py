@@ -45,11 +45,15 @@ def login_page(request):
 @login_required
 def homepage(request):
     """Render the homepage with paginated posts"""
-    posts_list = Post.objects.all().order_by('-created_at')
-    
+    if request.user.is_admin_user():
+        posts_list = Post.objects.all().order_by('-created_at')
+    else:
+        posts_list = Post.objects.filter(author=request.user) | Post.objects.filter(is_private=False)
+        posts_list = posts_list.distinct().order_by('-created_at')
+
     for post in posts_list:
         post.is_liked_by_user = Likes.objects.filter(post=post, user=request.user).exists()
-    
+
     # Pagination
     page = request.GET.get('page', 1)
     paginator = Paginator(posts_list, 5)  # Show 5 posts per page
@@ -207,61 +211,68 @@ class CreatePostView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        data = request.data
-        if not data.get('content') or not data.get('title'):
-            return Response({'error': 'Title and content are required fields.'}, status=status.HTTP_400_BAD_REQUEST)
-        try:
-            post = PostFactory.create_post(
-                post_type=data['post_type'],
-                title=data['title'],
-                content=data.get('content', ''),
-                metadata=data.get('metadata', {}),
-                author=request.user
-            )
-            return Response({'message': 'Post created successfully!', 'post_id': post.id}, status=status.HTTP_201_CREATED)
-        except ValueError as e:
-            logger.error(f"Error creating post: {e}")
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+      data = request.data
+      if not data.get('content') or not data.get('title'):
+          return Response({'error': 'Title and content are required fields.'}, status=status.HTTP_400_BAD_REQUEST)
+      try:
+          post = PostFactory.create_post(
+              post_type=data['post_type'],
+              title=data['title'],
+              content=data.get('content', ''),
+              metadata=data.get('metadata', {}),
+              author=request.user,
+              is_private=data.get('is_private', False)  # Handle privacy
+          )
+          return Response({'message': 'Post created successfully!', 'post_id': post.id}, status=status.HTTP_201_CREATED)
+      except ValueError as e:
+          logger.error(f"Error creating post: {e}")
+          return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
           
     def get(self, request):
         if request.user.is_admin_user():
+            # Admin can see all posts
             posts = Post.objects.all()
         else:
+            # Regular users can only see their own posts and public posts
             posts = Post.objects.filter(author=request.user) | Post.objects.filter(is_private=False)
-        
+
+        # Ensure no duplicate posts are returned
+        posts = posts.distinct()
+
         post_data = []
         for post in posts:
             serializer = PostSerializer(post)
             comments_count = Comment.objects.filter(post=post).count()
             likes_count = Likes.objects.filter(post=post).count()
             comments = Comment.objects.filter(post=post)
-            
+
             paginator = CommentPagination()
             paginated_comments = paginator.paginate_queryset(comments, request)
             comments_serializer = CommentSerializer(paginated_comments, many=True)
-            
+
             post_info = serializer.data
             post_info['comments_count'] = comments_count
             post_info['likes_count'] = likes_count
             post_info['comments'] = paginator.get_paginated_response(comments_serializer.data).data
             post_data.append(post_info)
-        
+
         return Response(post_data)
       
     def put(self, request, id):
         try:
             post = Post.objects.get(id=id)
         except Post.DoesNotExist:
-            return Response({"error": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
-        
-        if request.user != post.author and not request.user.is_admin_user(): 
-            return Response({"error": "You do not have permission to edit this post."}, status=status.HTTP_403_FORBIDDEN)
-        
-        serializer = PostSerializer(post, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'Post not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if request.user != post.author and not request.user.is_admin_user():
+            return Response({'error': 'You do not have permission to edit this post.'}, status=status.HTTP_403_FORBIDDEN)
+
+        is_private = request.data.get('is_private', None)
+        if is_private is not None:
+            post.is_private = is_private
+            post.save()
+
+        return Response({'message': 'Post updated successfully.'}, status=status.HTTP_200_OK)
       
     def delete(self, request, id):
         try:
@@ -386,6 +397,49 @@ class LikesView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 class PostDetailView(APIView):
+    """View to retrieve, update, and delete post details"""
+    permission_classes = [IsAuthenticated, IsPostAuthor]
+
+    def get(self, request, id):  # Change 'pk' to 'id'
+        try:
+            post = Post.objects.get(pk=id)
+        except Post.DoesNotExist:
+            return Response({"error": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        self.check_object_permissions(request, post)
+        return Response({"content": post.content})
+
+    def put(self, request, id):  # Change 'pk' to 'id'
+        """Update the privacy of a post"""
+        try:
+            post = Post.objects.get(pk=id)
+        except Post.DoesNotExist:
+            return Response({"error": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Check if the user is the author or an admin
+        if request.user != post.author and not request.user.is_admin_user():
+            return Response({"error": "You do not have permission to edit this post."}, status=status.HTTP_403_FORBIDDEN)
+
+        # Update the `is_private` field
+        is_private = request.data.get('is_private', None)
+        if is_private is not None:
+            post.is_private = is_private
+            post.save()
+            return Response({"message": "Post privacy updated successfully."}, status=status.HTTP_200_OK)
+
+        return Response({"error": "Invalid data provided."}, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, id):  # Change 'pk' to 'id'
+        try:
+            post = Post.objects.get(pk=id)
+        except Post.DoesNotExist:
+            return Response({"error": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        if request.user != post.author and not request.user.is_admin_user():
+            return Response({"error": "You do not have permission to delete this post."}, status=status.HTTP_403_FORBIDDEN)
+
+        post.delete()
+        return Response({"message": "Post deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
     """View to retrieve post details"""
     permission_classes = [IsAuthenticated, IsPostAuthor]
 
@@ -397,7 +451,27 @@ class PostDetailView(APIView):
         
         self.check_object_permissions(request, post)
         return Response({"content": post.content})
-      
+    
+    def put(self, request, pk):
+        """Update the privacy of a post"""
+        try:
+            post = Post.objects.get(pk=pk)
+        except Post.DoesNotExist:
+            return Response({"error": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Check if the user is the author or an admin
+        if request.user != post.author and not request.user.is_admin_user():
+            return Response({"error": "You do not have permission to edit this post."}, status=status.HTTP_403_FORBIDDEN)
+
+        # Update the `is_private` field
+        is_private = request.data.get('is_private', None)
+        if is_private is not None:
+            post.is_private = is_private
+            post.save()
+            return Response({"message": "Post privacy updated successfully."}, status=status.HTTP_200_OK)
+
+        return Response({"error": "Invalid data provided."}, status=status.HTTP_400_BAD_REQUEST)
+    
     def delete(self, request, id):
         try:
             post = Post.objects.get(id=id)

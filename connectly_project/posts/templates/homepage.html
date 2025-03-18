@@ -422,6 +422,18 @@
         font-size: 14px;
       }
       
+      .post-privacy-dropdown select {
+        padding: 5px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        background-color: #f9f9f9;
+        cursor: pointer;
+      }
+      
+      .post-privacy-dropdown select:hover {
+        background-color: #f0f2f5;
+      }
     </style>
     <link rel="stylesheet" href="{% static 'css/base.css' %}" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
@@ -469,6 +481,14 @@
               </div>
               <div class="post-timestamp">{{ post.created_at|timesince }} ago</div>
             </div>
+            {% if post.author.id == user.id or user.is_admin_user %}
+  <div class="post-privacy-dropdown">
+    <select onchange="updatePostPrivacy('{{ post.id }}', this.value)">
+      <option value="false" {% if not post.is_private %}selected{% endif %}>Public</option>
+      <option value="true" {% if post.is_private %}selected{% endif %}>Private</option>
+    </select>
+  </div>
+  {% endif %}
             {% if post.author.id == user.id or user.is_admin_user %}
             <button class="delete-post-btn" onclick="showDeletePostModal('{{ post.id }}')">
               <i class="fas fa-trash"></i>
@@ -550,6 +570,13 @@
             {% csrf_token %}
             <input type="text" name="title" placeholder="Post Title" required />
             <textarea name="content" placeholder="What's on your mind?" rows="4" required></textarea>
+            
+            <!-- Privacy Dropdown -->
+            <select name="is_private" id="privacy-dropdown" required>
+              <option value="false">Public</option>
+              <option value="true">Private</option>
+            </select>
+            
             <button type="submit">Post</button>
           </form>
         </div>
@@ -969,6 +996,81 @@
     } catch (error) {
       console.error("Error:", error);
       alert("An error occurred while deleting the post.");
+    }
+  }
+
+  async function createPost(event) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+  
+    try {
+      const token = await getAuthToken();
+  
+      // Setup headers
+      const headers = {
+        "Content-Type": "application/json",
+        "X-CSRFToken": getCookie("csrftoken"),
+      };
+  
+      if (token) {
+        headers["Authorization"] = `Token ${token}`;
+      }
+  
+      const response = await fetch("/posts/", {
+        method: "POST",
+        headers: headers,
+        credentials: "include",
+        body: JSON.stringify({
+          title: formData.get("title"),
+          content: formData.get("content"),
+          post_type: "text",
+          is_private: formData.get("is_private") === "true", // Convert to boolean
+        }),
+      });
+  
+      if (response.ok) {
+        window.location.reload();
+      } else {
+        console.error("Error creating post:", await response.text());
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  }
+
+  async function updatePostPrivacy(postId, isPrivate) {
+    try {
+      const token = await getAuthToken();
+  
+      // Setup headers
+      const headers = {
+        "Content-Type": "application/json",
+        "X-CSRFToken": getCookie("csrftoken"),
+      };
+  
+      if (token) {
+        headers["Authorization"] = `Token ${token}`;
+      }
+  
+      const response = await fetch(`/posts/${postId}/`, {
+        method: "PUT",
+        headers: headers,
+        credentials: "include",
+        body: JSON.stringify({
+          is_private: isPrivate === "true", // Convert to boolean
+        }),
+      });
+  
+      if (response.ok) {
+        alert("Post privacy updated successfully.");
+      } else {
+        console.error("Error updating post privacy:", await response.text());
+        alert("Failed to update post privacy. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      alert("An error occurred while updating the post privacy.");
     }
   }
     </script>
