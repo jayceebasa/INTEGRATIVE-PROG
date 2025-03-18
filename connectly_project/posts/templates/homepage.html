@@ -434,11 +434,82 @@
       .post-privacy-dropdown select:hover {
         background-color: #f0f2f5;
       }
+
+      .toast-container {
+        position: fixed;
+        bottom: 20px;  /* Changed from top: 790px to bottom: 20px */
+        right: 20px;
+        z-index: 9999;
+        pointer-events: none;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 10px;
+      }
+      
+      .toast {
+        pointer-events: auto;
+        display: flex;
+        align-items: center;
+        min-width: 280px;
+        max-width: 350px;
+        background: linear-gradient(to right, #41e049, #38c842);
+        color: white;
+        padding: 14px 18px;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        margin-bottom: 10px;
+        font-size: 0.95rem;
+        font-weight: 500;
+        animation: slideInRight 0.3s ease-out, fadeOut 0.5s ease-in 3.5s forwards;
+      }
+      
+      .toast::before {
+        content: "✓";
+        display: inline-block;
+        margin-right: 12px;
+        font-size: 1.2rem;
+        font-weight: bold;
+      }
+      
+      .toast.error {
+        background: linear-gradient(to right, #dc3545, #c82333);
+      }
+      
+      .toast.error::before {
+        content: "✕";
+      }
+      
+      @keyframes slideInRight {
+        from {
+          transform: translateX(100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+      
+      @keyframes fadeOut {
+        from {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        to {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+      }
+
     </style>
     <link rel="stylesheet" href="{% static 'css/base.css' %}" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   </head>
   <body>
+
+    <div id="toast-container" class="toast-container"></div>
+
     <div class="background-image"></div>
     <div class="content-wrapper">
       {% include 'partials/header.html' %}
@@ -617,7 +688,35 @@
     </div>
 
 
+
     <script>
+
+      function showToast(message, type = "success") {
+        console.log("Toast called with message:", message, "and type:", type);
+        const toastContainer = document.getElementById("toast-container");
+        
+        // Debug - check if container exists
+        if (!toastContainer) {
+          console.error("Toast container not found!");
+          return;
+        }
+      
+        // Create a new toast element
+        const toast = document.createElement("div");
+        toast.className = `toast ${type}`;
+        toast.textContent = message;
+      
+        // Append the toast to the container
+        toastContainer.appendChild(toast);
+        console.log("Toast element added to container");
+      
+        // Remove the toast after 4 seconds
+        setTimeout(() => {
+          toast.remove();
+        }, 4000);
+      }
+
+
       // Store auth token
       let authToken = localStorage.getItem("token");
 
@@ -1063,16 +1162,17 @@
       });
   
       if (response.ok) {
-        alert("Post privacy updated successfully.");
+        showToast("Post privacy updated successfully.");
       } else {
         console.error("Error updating post privacy:", await response.text());
-        alert("Failed to update post privacy. Please try again.");
+        showToast("Failed to update post privacy. Please try again.", "error");
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("An error occurred while updating the post privacy.");
+      showToast("An error occurred while updating the post privacy.", "error");
     }
   }
+
     </script>
   </body>
 </html>

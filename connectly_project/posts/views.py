@@ -400,50 +400,7 @@ class PostDetailView(APIView):
     """View to retrieve, update, and delete post details"""
     permission_classes = [IsAuthenticated, IsPostAuthor]
 
-    def get(self, request, id):  # Change 'pk' to 'id'
-        try:
-            post = Post.objects.get(pk=id)
-        except Post.DoesNotExist:
-            return Response({"error": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
-        
-        self.check_object_permissions(request, post)
-        return Response({"content": post.content})
-
-    def put(self, request, id):  # Change 'pk' to 'id'
-        """Update the privacy of a post"""
-        try:
-            post = Post.objects.get(pk=id)
-        except Post.DoesNotExist:
-            return Response({"error": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
-
-        # Check if the user is the author or an admin
-        if request.user != post.author and not request.user.is_admin_user():
-            return Response({"error": "You do not have permission to edit this post."}, status=status.HTTP_403_FORBIDDEN)
-
-        # Update the `is_private` field
-        is_private = request.data.get('is_private', None)
-        if is_private is not None:
-            post.is_private = is_private
-            post.save()
-            return Response({"message": "Post privacy updated successfully."}, status=status.HTTP_200_OK)
-
-        return Response({"error": "Invalid data provided."}, status=status.HTTP_400_BAD_REQUEST)
-
-    def delete(self, request, id):  # Change 'pk' to 'id'
-        try:
-            post = Post.objects.get(pk=id)
-        except Post.DoesNotExist:
-            return Response({"error": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
-
-        if request.user != post.author and not request.user.is_admin_user():
-            return Response({"error": "You do not have permission to delete this post."}, status=status.HTTP_403_FORBIDDEN)
-
-        post.delete()
-        return Response({"message": "Post deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
-    """View to retrieve post details"""
-    permission_classes = [IsAuthenticated, IsPostAuthor]
-
-    def get(self, request, pk):
+    def get(self, request, pk):  # Change 'id' to 'pk'
         try:
             post = Post.objects.get(pk=pk)
         except Post.DoesNotExist:
@@ -451,8 +408,8 @@ class PostDetailView(APIView):
         
         self.check_object_permissions(request, post)
         return Response({"content": post.content})
-    
-    def put(self, request, pk):
+
+    def put(self, request, pk):  # Change 'id' to 'pk'
         """Update the privacy of a post"""
         try:
             post = Post.objects.get(pk=pk)
@@ -471,10 +428,10 @@ class PostDetailView(APIView):
             return Response({"message": "Post privacy updated successfully."}, status=status.HTTP_200_OK)
 
         return Response({"error": "Invalid data provided."}, status=status.HTTP_400_BAD_REQUEST)
-    
-    def delete(self, request, id):
+
+    def delete(self, request, pk):  # Change 'id' to 'pk'
         try:
-            post = Post.objects.get(id=id)
+            post = Post.objects.get(pk=pk)
         except Post.DoesNotExist:
             return Response({"error": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
 
