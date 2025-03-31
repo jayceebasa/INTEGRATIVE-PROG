@@ -46,7 +46,6 @@ def login_page(request):
     """Render the login page"""
     return render(request, 'login.html')
 
-@cache_page(60 * 15)
 @login_required
 def homepage(request):
     """Render the homepage with paginated posts"""
