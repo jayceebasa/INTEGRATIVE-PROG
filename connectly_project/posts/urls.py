@@ -26,6 +26,8 @@ urlpatterns = [
     
     #pages
     path('homepage/', views.homepage, name='homepage'),
+    
+    path('cache-stats/', views.cache_stats, name='cache-stats'),
 ]
 
 if settings.DEBUG:
